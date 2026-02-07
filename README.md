@@ -84,75 +84,6 @@ Launch the example:
 cargo run --example simple
 ```
 
-### LiveKit Example
-
-#### Prerequisites for LiveKit
-
-To use LiveKit streaming, you need the `livekitwebrtcsink` GStreamer element installed.
-
-##### macOS
-
-After installing the Homebrew packages above, run:
-
-```bash
-./scripts/build-livekit-gstreamer-macos.sh
-```
-
-Then add this to your `~/.zshrc` or `~/.bash_profile`:
-
-```bash
-export GST_PLUGIN_PATH="$HOME/.local/lib/gstreamer-1.0"
-```
-
-##### Linux
-
-Build and install gst-plugins-rs:
-
-```bash
-# Clone and build gst-plugins-rs with LiveKit support
-git clone https://gitlab.freedesktop.org/gstreamer/gst-plugins-rs.git
-cd gst-plugins-rs
-cargo build --release -p gst-plugin-webrtc --features livekit
-
-# Install the plugin
-sudo install -m 644 target/release/libgstrswebrtc.so \
-  $(pkg-config --variable=pluginsdir gstreamer-1.0)/
-
-# Verify installation
-gst-inspect-1.0 livekitwebrtcsink
-```
-
-_Note: If you run into any Bevy-related build errors, please see the [Bevy repository](https://github.com/bevyengine/bevy) for platform-specific setup instructions._
-
-#### Running with LiveKit Cloud
-
-1. Sign up for a free account at https://livekit.io/cloud
-2. Create a new project and get your API credentials
-3. Set environment variables:
-
-```bash
-export LIVEKIT_URL="wss://your-project.livekit.cloud"
-export LIVEKIT_API_KEY="your-api-key"
-export LIVEKIT_API_SECRET="your-api-secret"
-export LIVEKIT_ROOM_NAME="bevy_streaming_demo"
-```
-
-4. Run the LiveKit example:
-
-```bash
-cargo run --example livekit --features livekit
-```
-
-5. Generate a viewer token and connect:
-
-```bash
-uv run ./scripts/generate-viewer-token.py
-```
-
-This will output a token and instructions to connect using the LiveKit meet app at https://meet.livekit.io/
-
-![LiveKit Demo](livekit_demo.png)
-
 ### Build the headless Docker image
 
 I've provided a Dockerfile in `docker/Dockerfile` that runs the example as a starting point for you to build your own Docker images.
@@ -228,7 +159,7 @@ docker run --rm \
     -t -i \
     --network=host \
     --device /dev/dri:/dev/dri \
-    -e GST_PLUGIN_FEATURE_RANK="x264enc:1000"
+    -e GST_PLUGIN_FEATURE_RANK="x264enc:1000" \
     bevy_streaming
 ```
 
@@ -257,6 +188,76 @@ When you move in the player window, the spectator window will always look at you
 _Note: the parameter `HoveringMouse=true` in url makes sending mouse events by simply hovering the window. If you disable it, the cursor will be grabbed when you click in the window. You can release grabbing of the cursor using `ESC` key._
 
 _Note 2: in the example, the cursor is volontary shown so you can easily have an idea of the latency._
+
+
+### LiveKit Example
+
+#### Prerequisites for LiveKit
+
+To use LiveKit streaming, you need the `livekitwebrtcsink` GStreamer element installed.
+
+##### macOS
+
+After installing the Homebrew packages above, run:
+
+```bash
+./scripts/build-livekit-gstreamer-macos.sh
+```
+
+Then add this to your `~/.zshrc` or `~/.bash_profile`:
+
+```bash
+export GST_PLUGIN_PATH="$HOME/.local/lib/gstreamer-1.0"
+```
+
+##### Linux
+
+Build and install gst-plugins-rs:
+
+```bash
+# Clone and build gst-plugins-rs with LiveKit support
+git clone https://gitlab.freedesktop.org/gstreamer/gst-plugins-rs.git
+cd gst-plugins-rs
+cargo build --release -p gst-plugin-webrtc --features livekit
+
+# Install the plugin
+sudo install -m 644 target/release/libgstrswebrtc.so \
+  $(pkg-config --variable=pluginsdir gstreamer-1.0)/
+
+# Verify installation
+gst-inspect-1.0 livekitwebrtcsink
+```
+
+_Note: If you run into any Bevy-related build errors, please see the [Bevy repository](https://github.com/bevyengine/bevy) for platform-specific setup instructions._
+
+#### Running with LiveKit Cloud
+
+1. Sign up for a free account at https://livekit.io/cloud
+2. Create a new project and get your API credentials
+3. Set environment variables:
+
+```bash
+export LIVEKIT_URL="wss://your-project.livekit.cloud"
+export LIVEKIT_API_KEY="your-api-key"
+export LIVEKIT_API_SECRET="your-api-secret"
+export LIVEKIT_ROOM_NAME="bevy_streaming_demo"
+```
+
+4. Run the LiveKit example:
+
+```bash
+cargo run --example livekit --features livekit
+```
+
+5. Generate a viewer token and connect:
+
+```bash
+uv run ./scripts/generate-viewer-token.py
+```
+
+This will output a token and instructions to connect using the LiveKit meet app at https://meet.livekit.io/
+
+![LiveKit Demo](livekit_demo.png)
 
 ## Thanks
 

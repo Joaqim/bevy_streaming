@@ -35,7 +35,8 @@ COPY Cargo.toml Cargo.lock ./
 # Empty lib
 RUN mkdir ./src && touch ./src/lib.rs
 # Empty example
-RUN mkdir -p ./examples/simple && echo 'fn main() {}' > ./examples/simple/main.rs
+RUN mkdir -p ./examples/simple && echo 'fn main() {}' > ./examples/simple/main.rs \
+    && mkdir -p ./examples/livekit && echo 'fn main() {}' > ./examples/livekit/main.rs
 
 # Install Rust dependencies
 RUN cargo build --locked --release --examples --target x86_64-unknown-linux-gnu
@@ -61,7 +62,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gstreamer1.0-plugins-good \
     gstreamer1.0-plugins-bad \
     gstreamer1.0-plugins-ugly \
-    # vaapi encoders    
+    # vaapi encoders
     gstreamer1.0-vaapi \
     gstreamer1.0-libav \
     gstreamer1.0-nice  \

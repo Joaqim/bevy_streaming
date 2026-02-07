@@ -2,7 +2,7 @@ use bevy_asset::prelude::*;
 use bevy_ecs::{prelude::*, system::SystemParam};
 use bevy_image::prelude::*;
 use bevy_log::prelude::*;
-use bevy_render::{prelude::*, renderer::RenderDevice};
+use bevy_render::{renderer::RenderDevice};
 use gst::prelude::*;
 use gstrswebrtc::webrtcsink;
 use std::{marker::PhantomData, sync::Arc};
@@ -25,17 +25,17 @@ pub struct StreamerHelper<'w, 's, E: StreamEncoder + 'static> {
 }
 
 pub trait StreamerCameraBuilder<E: StreamEncoder, S> {
-    fn new_streamer_camera(&mut self, settings: S) -> impl Bundle;
+    fn new_render_target(&mut self, settings: S) -> impl Bundle;
 }
 
-impl<'w, 's> StreamerCameraBuilder<GstWebRtcEncoder, GstWebRtcSettings> 
+impl<'w, 's> StreamerCameraBuilder<GstWebRtcEncoder, GstWebRtcSettings>
 for StreamerHelper<'w, 's, GstWebRtcEncoder>
 {
-    fn new_streamer_camera(&mut self, settings: GstWebRtcSettings) -> impl Bundle {
+    fn new_render_target(&mut self, settings: GstWebRtcSettings) -> impl Bundle {
         let encoder = GstWebRtcEncoder::with_settings(settings.clone())
             .expect("Unable to create gst encoder");
         encoder.start().expect("Unable to start pipeline");
-        
+
         let controller_state = if settings.enable_controller {
             match &settings.signalling_server {
                 #[cfg(feature = "pixelstreaming")]
@@ -57,20 +57,15 @@ for StreamerHelper<'w, 's, GstWebRtcEncoder>
             Arc::new(encoder),
         );
 
-        let camera = Camera {
-            target: render_target,
-            ..Default::default()
-        };
-
-        (camera, controller_state)
+        (controller_state, render_target)
     }
 }
 
 #[cfg(feature = "livekit")]
-impl<'w, 's> StreamerCameraBuilder<LiveKitEncoder, LiveKitSettings> 
+impl<'w, 's> StreamerCameraBuilder<LiveKitEncoder, LiveKitSettings>
 for StreamerHelper<'w, 's, LiveKitEncoder>
 {
-    fn new_streamer_camera(&mut self, settings: LiveKitSettings) -> impl Bundle {
+    fn new_render_target(&mut self, settings: LiveKitSettings) -> impl Bundle {
         let encoder = LiveKitEncoder::new(settings.clone())
             .expect("Unable to create LiveKit encoder");
 
@@ -83,12 +78,7 @@ for StreamerHelper<'w, 's, LiveKitEncoder>
             encoder,
         );
 
-        let camera = Camera {
-            target: render_target,
-            ..Default::default()
-        };
-
-        (camera, ControllerState::None)
+        (ControllerState::None, render_target)
     }
 }
 

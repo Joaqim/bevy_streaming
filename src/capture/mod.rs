@@ -1,11 +1,11 @@
 use bevy_asset::{RenderAssetUsages, prelude::*};
+use bevy_camera::RenderTarget;
 use bevy_derive::{Deref, DerefMut};
 use bevy_ecs::prelude::*;
 use bevy_image::prelude::*;
 use bevy_log::prelude::*;
 use bevy_render::{
     Extract,
-    camera::RenderTarget,
     render_resource::{
         Buffer, BufferDescriptor, BufferUsages, Extent3d, TextureDimension, TextureFormat,
         TextureUsages,

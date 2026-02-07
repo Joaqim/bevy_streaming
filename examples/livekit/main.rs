@@ -1,7 +1,7 @@
 use bevy::{
-    app::ScheduleRunnerPlugin, 
-    prelude::*, 
-    render::RenderPlugin, 
+    app::ScheduleRunnerPlugin,
+    prelude::*,
+    render::RenderPlugin,
     winit::WinitPlugin,
 };
 use bevy_streaming::{livekit::{LiveKitEncoder, LiveKitSettings}, StreamerCameraBuilder, StreamerHelper};
@@ -46,7 +46,7 @@ fn setup(
         })),
         Transform::from_xyz(0.0, 0.0, 0.0),
     ));
-    
+
     commands.spawn((
         Mesh3d(meshes.add(Cuboid::new(1.0, 1.0, 1.0))),
         MeshMaterial3d(materials.add(StandardMaterial {
@@ -55,7 +55,7 @@ fn setup(
         })),
         Transform::from_xyz(-2.0, 0.5, 0.0),
     ));
-    
+
     commands.spawn((
         Mesh3d(meshes.add(Sphere::new(0.5))),
         MeshMaterial3d(materials.add(StandardMaterial {
@@ -65,7 +65,7 @@ fn setup(
         Transform::from_xyz(0.0, 0.5, 0.0),
         Player,
     ));
-    
+
     commands.spawn((
         PointLight {
             intensity: 1500.0,
@@ -74,7 +74,7 @@ fn setup(
         },
         Transform::from_xyz(4.0, 8.0, 4.0),
     ));
-    
+
     // Player camera with LiveKit streaming
     let livekit_settings = LiveKitSettings {
         url: std::env::var("LIVEKIT_URL")
@@ -93,13 +93,14 @@ fn setup(
         height: 720,
         enable_controller: false,
     };
-    
+
     commands.spawn((
-        helper.new_streamer_camera(livekit_settings),
+        Camera::default(),
+        helper.new_render_target(livekit_settings),
         Camera3d::default(),
         Transform::from_xyz(0.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
     ));
-    
+
     // Spectator camera with LiveKit streaming (different participant)
     let spectator_settings = LiveKitSettings {
         url: std::env::var("LIVEKIT_URL")
@@ -116,9 +117,10 @@ fn setup(
         height: 720,
         enable_controller: false,
     };
-    
+
     commands.spawn((
-        helper.new_streamer_camera(spectator_settings),
+        Camera::default(),
+        helper.new_render_target(spectator_settings),
         Camera3d::default(),
         Transform::from_xyz(5.0, 5.0, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
         SpectatorCamera,
@@ -133,7 +135,7 @@ fn move_player(
         // Auto-move the player in a circle pattern
         let elapsed = time.elapsed_secs();
         let radius = 3.0;
-        
+
         transform.translation.x = radius * elapsed.cos();
         transform.translation.z = radius * elapsed.sin();
         transform.translation.y = 0.5 + (elapsed * 2.0).sin() * 0.5; // Slight bobbing
@@ -151,13 +153,13 @@ fn rotate_camera(
             let angle = time.elapsed_secs() * 0.5;
             let radius = 8.0;
             let height = 6.0;
-            
+
             camera_transform.translation = Vec3::new(
                 angle.cos() * radius,
                 height,
                 angle.sin() * radius,
             );
-            
+
             camera_transform.look_at(player_transform.translation, Vec3::Y);
         }
     }

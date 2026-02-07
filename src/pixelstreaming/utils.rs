@@ -1,4 +1,5 @@
 use bevy_asset::prelude::*;
+use bevy_camera::RenderTarget;
 use bevy_ecs::{prelude::*, system::SystemParam};
 use bevy_image::prelude::*;
 use bevy_input::{
@@ -8,7 +9,6 @@ use bevy_input::{
 use bevy_log::prelude::*;
 use bevy_math::prelude::*;
 use bevy_picking::{pointer::Location, prelude::*};
-use bevy_render::prelude::*;
 
 pub const SCALE: f32 = 65536.0;
 
@@ -18,11 +18,11 @@ pub struct PSConversions<'w> {
 }
 
 impl<'w> PSConversions<'w> {
-    pub fn from_ps_position<T>(&self, camera: &Camera, x: T, y: T) -> Vec2
+    pub fn from_ps_position<T>(&self, render_target: &RenderTarget, x: T, y: T) -> Vec2
     where
         T: Into<f32>,
     {
-        let image = camera.target.as_image().unwrap();
+        let image = render_target.as_image().unwrap();
         let image = self.images.get(image).unwrap();
         let w = image.size().x as f32;
         let h = image.size().y as f32;
@@ -35,24 +35,24 @@ impl<'w> PSConversions<'w> {
         }
     }
 
-    pub fn from_ps_delta<T>(&self, camera: &Camera, x: T, y: T) -> Vec2
+    pub fn from_ps_delta<T>(&self, render_target: &RenderTarget, x: T, y: T) -> Vec2
     where
         T: Into<f32>,
     {
-        self.from_ps_position(camera, x, y)
+        self.from_ps_position(render_target, x, y)
     }
 
     #[allow(dead_code)]
     pub fn ps_to_location(
         &self,
-        camera: &Camera,
+        render_target: &RenderTarget,
         window: Option<Entity>,
         x: u16,
         y: u16,
     ) -> Location {
         Location {
-            target: camera.target.normalize(window).unwrap(),
-            position: self.from_ps_position(camera, x, y),
+            target: render_target.normalize(window).unwrap(),
+            position: self.from_ps_position(render_target, x, y),
         }
     }
 

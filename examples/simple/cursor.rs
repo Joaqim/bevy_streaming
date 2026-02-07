@@ -56,7 +56,7 @@ fn update_cursor_camera(
 
 fn update_cursor_position(
     mut q_cursor: Query<&mut Node, With<Cursor>>,
-    mut window_events: EventReader<WindowEvent>,
+    mut window_events: MessageReader<WindowEvent>,
 ) {
     let mut cursor = q_cursor.single_mut();
 

@@ -18,19 +18,20 @@ name = "livekit"
 required-features = ["livekit"]
 
 [dependencies]
-bevy_app = { version = "0.16" }
-bevy_ecs = { version = "0.16" }
-bevy_render = { version = "0.16" }
-bevy_asset = { version = "0.16" }
-bevy_image = { version = "0.16" }
-bevy_log = { version = "0.16" }
-bevy_input = { version = "0.16" }
-bevy_picking = { version = "0.16" }
-bevy_math = { version = "0.16" }
-bevy_window = { version = "0.16", optional = true }
-bevy_utils = { version = "0.16" }
-bevy_derive = { version = "0.16" }
-bevy_platform = { version = "0.16" }
+bevy_camera = { version = "0.18" }
+bevy_app = { version = "0.18" }
+bevy_ecs = { version = "0.18" }
+bevy_render = { version = "0.18" }
+bevy_asset = { version = "0.18" }
+bevy_image = { version = "0.18" }
+bevy_log = { version = "0.18" }
+bevy_input = { version = "0.18" }
+bevy_picking = { version = "0.18" }
+bevy_math = { version = "0.18" }
+bevy_window = { version = "0.18", optional = true }
+bevy_utils = { version = "0.18" }
+bevy_derive = { version = "0.18" }
+bevy_platform = { version = "0.18" }
 crossbeam-channel = "0.5"
 
 ## GSTREAMER
@@ -43,8 +44,8 @@ gst-sdp = { package = "gstreamer-sdp", version = "0.23" }
 gst-rtp = { package = "gstreamer-rtp", version = "0.23" }
 gst-webrtc = { package = "gstreamer-webrtc", version = "0.23" }
 gst-utils = { package = "gstreamer-utils", version = "0.23" }
-gst-plugin-webrtc = "0.13.3"
-gst-plugin-rtp = "0.13.3"
+gst-plugin-webrtc = { version = "0.13.3", default-features = false }
+gst-plugin-rtp = { version = "0.13.3" }
 anyhow = "1"
 derive_more = { version = "1", features = ["display", "error"] }
 
@@ -68,7 +69,7 @@ url = { version = "2", optional = true }
 byteorder = { version = "1.5.0", optional = true }
 
 [dev-dependencies]
-bevy = { version = "0.16" }
+bevy = { version = "0.18" }
 
 [features]
 default = ["pixelstreaming"]
@@ -85,7 +86,26 @@ pixelstreaming = [
     "dep:byteorder",
     "dep:bevy_window",
 ]
-livekit = []
+livekit = ["gst-plugin-webrtc/livekit"]
+gst_v1_20 = [
+    "gst/v1_20",
+    "gst-app/v1_20",
+    "gst-base/v1_20",
+    "gst-video/v1_20",
+    "gst-sdp/v1_20",
+    "gst-rtp/v1_20",
+    "gst-webrtc/v1_20",
+]
+gst_v1_22 = [
+    "gst/v1_22",
+    "gst-app/v1_22",
+    "gst-base/v1_22",
+    "gst-video/v1_22",
+    "gst-sdp/v1_22",
+    "gst-rtp/v1_22",
+    "gst-webrtc/v1_22",
+    "gst-plugin-webrtc/v1_22"
+]
 
 # Enable a small amount of optimization in the dev profile.
 [profile.dev]

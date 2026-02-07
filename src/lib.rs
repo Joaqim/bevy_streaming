@@ -1,11 +1,13 @@
+#[cfg(feature = "pixelstreaming")]
 use bevy_app::prelude::*;
+#[cfg(feature = "pixelstreaming")]
+use bevy_camera::RenderTarget;
 use bevy_ecs::prelude::*;
 use bevy_input::{
     keyboard::KeyboardInput,
     mouse::{MouseButtonInput, MouseMotion, MouseWheel},
 };
-use bevy_picking::PickSet;
-use bevy_render::{Render, RenderApp, RenderSet, prelude::*, render_graph::RenderGraph};
+use bevy_render::{Render, RenderApp, RenderSystems, prelude::*, render_graph::RenderGraph};
 #[cfg(feature = "pixelstreaming")]
 use bevy_window::{PrimaryWindow, WindowEvent, prelude::*};
 
@@ -18,12 +20,12 @@ mod capture;
 mod helper;
 mod settings;
 
-pub mod gst_webrtc_encoder;
-#[cfg(feature = "pixelstreaming")]
-mod pixelstreaming;
 pub mod encoder;
+pub mod gst_webrtc_encoder;
 #[cfg(feature = "livekit")]
 pub mod livekit;
+#[cfg(feature = "pixelstreaming")]
+mod pixelstreaming;
 
 #[derive(Component)]
 enum ControllerState {
@@ -67,16 +69,18 @@ impl Plugin for StreamerPlugin {
             .add_systems(
                 Render,
                 (
-                    receive_image_from_buffer.after(RenderSet::Render),
-                    release_mapped_buffers.after(RenderSet::Render),
+                    receive_image_from_buffer.after(RenderSystems::Render),
+                    release_mapped_buffers.after(RenderSystems::Render),
                 ),
             );
 
         #[cfg(feature = "pixelstreaming")]
         {
+            use bevy_picking::PickingSystems;
+
             app.add_systems(
                 PreUpdate,
-                (handle_controller_messages.in_set(PickSet::Input),),
+                handle_controller_messages.in_set(PickingSystems::Input),
             );
         }
         app.add_systems(PostUpdate, handle_controllers);
@@ -107,18 +111,18 @@ fn handle_controllers(mut controllers: Query<&mut ControllerState>) {
 /// This system process controller's messages
 #[cfg(feature = "pixelstreaming")]
 fn handle_controller_messages(
-    mut controllers: Query<(&Camera, &mut ControllerState)>,
+    mut controllers: Query<(&RenderTarget, &mut ControllerState)>,
     windows: Query<(Entity, &Window), With<PrimaryWindow>>,
     #[cfg(feature = "pixelstreaming")] ps_conversions: PSConversions,
-    mut mouse_motion_event: EventWriter<MouseMotion>,
-    mut mouse_button_input_events: EventWriter<MouseButtonInput>,
-    mut mouse_wheel_events: EventWriter<MouseWheel>,
-    mut window_events: EventWriter<WindowEvent>,
-    mut keyboard_input_events: EventWriter<KeyboardInput>,
+    mut mouse_motion_event: MessageWriter<MouseMotion>,
+    mut mouse_button_input_events: MessageWriter<MouseButtonInput>,
+    mut mouse_wheel_events: MessageWriter<MouseWheel>,
+    mut window_events: MessageWriter<WindowEvent>,
+    mut keyboard_input_events: MessageWriter<KeyboardInput>,
 ) {
     let window = windows.single().unwrap().0;
 
-    for (camera, mut controller) in controllers.iter_mut() {
+    for (render_target, mut controller) in controllers.iter_mut() {
         let controller = controller.as_mut();
         match controller {
             ControllerState::None => {}
@@ -130,7 +134,7 @@ fn handle_controller_messages(
                             PSMessage::MouseMove(mouse_move) => {
                                 mouse_motion_event.write(MouseMotion {
                                     delta: ps_conversions.from_ps_delta(
-                                        camera,
+                                        render_target,
                                         mouse_move.delta_x,
                                         mouse_move.delta_y,
                                     ),
@@ -138,12 +142,12 @@ fn handle_controller_messages(
                                 window_events.write(WindowEvent::CursorMoved(CursorMoved {
                                     window,
                                     position: ps_conversions.from_ps_position(
-                                        camera,
+                                        render_target,
                                         mouse_move.x,
                                         mouse_move.y,
                                     ),
                                     delta: Some(ps_conversions.from_ps_delta(
-                                        camera,
+                                        render_target,
                                         mouse_move.delta_x,
                                         mouse_move.delta_y,
                                     )),

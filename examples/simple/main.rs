@@ -59,9 +59,10 @@ fn setup_cameras(mut commands: Commands, mut streamer: StreamerHelper<GstWebRtcE
     // camera
     let main_camera = commands
         .spawn((
+            Camera::default(),
             Camera3d::default(),
             Transform::from_xyz(-2.5, 4.5, 9.0).looking_at(Vec3::ZERO, Vec3::Y),
-            streamer.new_streamer_camera(GstWebRtcSettings {
+            streamer.new_render_target(GstWebRtcSettings {
                 signalling_server: SignallingServer::PixelStreaming {
                     uri: "ws://localhost:8888".to_string(),
                     streamer_id: Some("player".to_string()),
@@ -70,8 +71,8 @@ fn setup_cameras(mut commands: Commands, mut streamer: StreamerHelper<GstWebRtcE
                 //     uri: "ws://127.0.0.1:8443".to_string(),
                 //     peer_id: None,
                 // },
-                width: 1920,
-                height: 1080,
+                width: 1280,
+                height: 720,
                 video_caps: Some("video/x-h264".to_string()),
                 congestion_control: Some(CongestionControl::Disabled),
                 enable_controller: true,
@@ -82,15 +83,16 @@ fn setup_cameras(mut commands: Commands, mut streamer: StreamerHelper<GstWebRtcE
         .id();
 
     commands.spawn((
+        Camera::default(),
         Camera3d::default(),
         Transform::from_xyz(2.5, 12.0, 9.0).looking_at(Vec3::ZERO, Vec3::Y),
-        streamer.new_streamer_camera(GstWebRtcSettings {
+        streamer.new_render_target(GstWebRtcSettings {
             signalling_server: SignallingServer::PixelStreaming {
                 uri: "ws://localhost:8888".to_string(),
                 streamer_id: Some("spectator".to_string()),
             },
-            width: 1920,
-            height: 1080,
+            width: 1280,
+            height: 720,
             video_caps: Some("video/x-h264".to_string()),
             congestion_control: Some(CongestionControl::Disabled),
             enable_controller: false,

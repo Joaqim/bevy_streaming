@@ -6,7 +6,7 @@ use bevy_render::{
     render_asset::RenderAssets,
     render_graph::{self, NodeRunError, RenderGraphContext, RenderLabel},
     render_resource::{
-        CommandEncoderDescriptor, Maintain, MapMode, TexelCopyBufferInfo, TexelCopyBufferLayout,
+        CommandEncoderDescriptor, MapMode, PollType, TexelCopyBufferInfo, TexelCopyBufferLayout
     },
     renderer::{RenderContext, RenderDevice, RenderQueue},
 };
@@ -154,7 +154,9 @@ pub fn receive_image_from_buffer(
             }
         });
 
-        render_device.poll(Maintain::Poll);
+        if let Err(e) = render_device.poll(PollType::Poll) {
+            error!("Failed to poll render  device: {:?}", e);
+        }
     }
 }
 

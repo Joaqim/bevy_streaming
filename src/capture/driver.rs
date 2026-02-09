@@ -45,7 +45,7 @@ impl render_graph::Node for CaptureDriver {
                 continue;
             }
 
-            let src_image = gpu_images.get(&capture.src_image).unwrap();
+            let src_image = gpu_images.get(&capture.src_image).expect("Gpu image missing");
 
             let block_dimensions = src_image.texture_format.block_dimensions();
             let block_size = src_image.texture_format.block_copy_size(None).unwrap();

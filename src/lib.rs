@@ -22,6 +22,9 @@ mod settings;
 
 pub mod encoder;
 pub mod gst_webrtc_encoder;
+
+pub mod surface;
+
 #[cfg(feature = "livekit")]
 pub mod livekit;
 #[cfg(feature = "pixelstreaming")]
@@ -73,6 +76,12 @@ impl Plugin for StreamerPlugin {
                     release_mapped_buffers.after(RenderSystems::Render),
                 ),
             );
+
+        #[cfg(feature = "surface")]
+        {
+            use surface::surface_plugin;
+            surface_plugin(app)
+        }
 
         #[cfg(feature = "pixelstreaming")]
         {

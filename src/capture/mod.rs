@@ -117,14 +117,13 @@ impl Capture {
 
 /// Setups render target and cpu image for saving, changes scene state into render mode
 pub fn setup_render_target(
-    commands: &mut Commands,
     images: &mut ResMut<Assets<Image>>,
     render_device: &Res<RenderDevice>,
     // render_instance: &Res<RenderInstance>,
     width: u32,
     height: u32,
     encoder: EncoderHandle,
-) -> RenderTarget {
+) -> impl Bundle {
     let size = Extent3d {
         width,
         height,
@@ -143,16 +142,15 @@ pub fn setup_render_target(
         TextureUsages::COPY_SRC | TextureUsages::RENDER_ATTACHMENT | TextureUsages::TEXTURE_BINDING;
     let render_target_image_handle = images.add(render_target_image);
 
-    commands.spawn(Capture::new(
-        render_target_image_handle.clone(),
-        size,
-        render_device,
-        encoder,
-    ));
-
-    // commands.spawn(ImageToSave(cpu_image_handle));
-
-    RenderTarget::Image(render_target_image_handle.into())
+    (
+        Capture::new(
+            render_target_image_handle.clone(),
+            size,
+            render_device,
+            encoder,
+        ),
+        RenderTarget::Image(render_target_image_handle.into()),
+    )
 }
 
 pub fn spawn_worker() -> (Sender<SendBufferJob>, Receiver<ReleaseSignal>) {
@@ -163,7 +161,6 @@ pub fn spawn_worker() -> (Sender<SendBufferJob>, Receiver<ReleaseSignal>) {
         while let Ok(job) = rx_job.recv() {
             let slice = job.buffer.slice(..);
             let data = slice.get_mapped_range().to_vec();
-
 
             let _ = job.encoder.push_frame(&data);
 

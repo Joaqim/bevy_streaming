@@ -8,6 +8,7 @@ use bevy_streaming::{
 use camera_controller::{CameraController, CameraControllerPlugin};
 use cursor::CursorPlugin;
 use std::time::Duration;
+use bevy_streaming::surface::encoder::GstWebRtcDmabufEncoder;
 
 mod camera_controller;
 mod cursor;

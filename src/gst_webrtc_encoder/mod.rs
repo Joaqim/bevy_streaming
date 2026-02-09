@@ -13,10 +13,10 @@ use crate::{CongestionControl, SignallingServer, GstWebRtcSettings, encoder::Str
 
 #[derive(Debug, Display, Error)]
 #[display("Received error from {src}: {error} (debug: {debug:?})")]
-struct ErrorMessage {
-    src: glib::GString,
-    error: glib::Error,
-    debug: Option<glib::GString>,
+pub struct ErrorMessage {
+    pub src: glib::GString,
+    pub error: glib::Error,
+    pub debug: Option<glib::GString>,
 }
 
 impl Into<Signallable> for &SignallingServer {

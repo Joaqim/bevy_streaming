@@ -390,7 +390,7 @@ fn set_target_images(
 
             viewport.queued_dmabuf.clear();
 
-            for _ in 0..3 {
+            for _ in 0..2 {
                 let dmabuf = DmabufTexture::new(
                     &render_adapter,
                     render_device.wgpu_device(),
@@ -436,19 +436,15 @@ fn present_frames(mut viewports: Query<&mut RenderViewport>) {
                 bevy_log::info!("DMA caps: {:#?}", caps);
                 viewport.encoder.appsrc.set_caps(Some(&caps));
                 viewport.encoder.start().expect("Unable to start pipeline");
-            } else {
-                let buffer = dmabuf
-                    .build_gst_buffer()
-                    .expect("failed to build gst buffer");
-
-                viewport.encoder.push_buffer(buffer);
             }
 
-            viewport.current_buffer = (viewport.current_buffer + 1) % viewport.queued_dmabuf.len();
+            let buffer = dmabuf
+                .build_gst_buffer()
+                .expect("failed to build gst buffer");
 
-            // viewport
-            //     .next_dmabuf
-            //     .store(Some(Box::new(dmabuf)), atomic::Ordering::SeqCst);
+            viewport.encoder.push_buffer(buffer).expect("Unable to push buffer to encoder");
+
+            viewport.current_buffer = (viewport.current_buffer + 1) % viewport.queued_dmabuf.len();
         }
         if viewport.send_caps {
             viewport.send_caps = false;

@@ -2,6 +2,7 @@ use bevy::{
     app::ScheduleRunnerPlugin, prelude::*, render::RenderPlugin, time::TimeUpdateStrategy,
     winit::WinitPlugin,
 };
+use bevy_panorbit_camera::{ActiveCameraData, PanOrbitCamera, PanOrbitCameraPlugin};
 use bevy_streaming::gst_webrtc_encoder::GstWebRtcEncoder;
 use bevy_streaming::surface::{GtkViewports, SurfaceInitPlugin};
 use bevy_streaming::{
@@ -11,6 +12,7 @@ use bevy_streaming::{
 use camera_controller::{CameraController, CameraControllerPlugin};
 use cursor::CursorPlugin;
 use std::time::Duration;
+use bevy_app::RunMode;
 
 mod camera_controller;
 mod cursor;
@@ -34,8 +36,14 @@ fn main() -> AppExit {
             // Run 60 times per second.
             Duration::from_secs_f64(1.0 / 60.0),
         ),
+        // ScheduleRunnerPlugin {
+        //     run_mode: RunMode::Loop {
+        //         wait: None,
+        //     },
+        // },
         StreamerPlugin,
         CameraControllerPlugin,
+        PanOrbitCameraPlugin,
         CursorPlugin,
     ));
 
@@ -45,7 +53,10 @@ fn main() -> AppExit {
     // )));
 
     // Setup
-    app.add_systems(Startup, (setup_cameras, setup_cameras_2, setup_scene));
+    app.add_systems(
+        Startup,
+        (setup_cameras, setup_scene),
+    );
 
     app.add_systems(
         Update,
@@ -68,7 +79,15 @@ struct SpectatorCamera;
 #[derive(Component)]
 struct TimestampText;
 
-fn setup_cameras(mut commands: Commands, mut viewports: GtkViewports) {
+fn setup_cameras(
+    mut commands: Commands,
+    mut viewports: GtkViewports,
+    mut active_camera_data: ResMut<ActiveCameraData>,
+) {
+
+    let width = 1920;
+    let height = 1080;
+
     // camera
     let main_camera = commands
         .spawn((
@@ -84,16 +103,22 @@ fn setup_cameras(mut commands: Commands, mut viewports: GtkViewports) {
                 //     uri: "ws://127.0.0.1:8443".to_string(),
                 //     peer_id: None,
                 // },
-                width: 1920,
-                height: 1080,
+                width,
+                height,
                 video_caps: Some("video/x-h264".to_string()),
                 congestion_control: Some(CongestionControl::Disabled),
                 enable_controller: true,
             }),
-            CameraController::default(),
+            // CameraController::default(),
+            PanOrbitCamera::default(),
             PlayerCamera,
         ))
         .id();
+
+    active_camera_data.manual = true;
+    active_camera_data.entity = Some(main_camera);
+    active_camera_data.viewport_size = Some(Vec2::new(width as f32, height as f32));
+    active_camera_data.window_size = Some(Vec2::new(width as f32, height as f32));
 
     // commands.spawn((
     //     Camera::default(),
@@ -104,8 +129,8 @@ fn setup_cameras(mut commands: Commands, mut viewports: GtkViewports) {
     //             uri: "ws://localhost:8888".to_string(),
     //             streamer_id: Some("spectator".to_string()),
     //         },
-    //         width: 1280,
-    //         height: 720,
+    //         width,
+    //         height,
     //         video_caps: Some("video/x-h264".to_string()),
     //         congestion_control: Some(CongestionControl::Disabled),
     //         enable_controller: false,
@@ -114,7 +139,7 @@ fn setup_cameras(mut commands: Commands, mut viewports: GtkViewports) {
     // ));
 
     commands.spawn((
-        Text::new("Camera with GPU => GPU via DMABuf."),
+        Text::default(),
         Node {
             position_type: PositionType::Absolute,
             top: Val::Px(12.0),
@@ -227,10 +252,7 @@ fn update_player_position_and_spectator_view(
     // spectator_camera_transform.look_at(camera_transform.translation, Vec3::Y);
 }
 
-fn update_timestamp_system(
-    time: Res<Time>,
-    mut query_cpu: Query<&mut Text, With<TimestampText>>,
-) {
+fn update_timestamp_system(time: Res<Time>, mut query_cpu: Query<&mut Text, With<TimestampText>>) {
     for mut text in &mut query_cpu {
         // .elapsed_secs() donne le temps depuis le lancement
         // Vous pouvez aussi utiliser .elapsed() pour obtenir un Duration plus précis

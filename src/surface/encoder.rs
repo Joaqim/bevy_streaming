@@ -29,82 +29,61 @@ impl GstWebRtcDmabufEncoder {
 
         let pipeline = gst::Pipeline::default();
 
-        let video_info = gst_video::VideoInfo::builder(
-            gst_video::VideoFormat::Rgba,
-            settings.width,
-            settings.height,
-        )
-        .build()
-        .expect("Failed to create video info");
-
-        info!("Video info caps: {:#?}", video_info.to_caps()?);
-
-        let appsrc = gst_app::AppSrc::builder()
-            .name("appsrc")
-            .do_timestamp(true)
-            .is_live(true)
-            .caps(&video_info.to_caps()?)
-            // .format(gst::Format::Bytes)
-            .format(gst::Format::Time)
-            // Allocate space for 1 buffer
-            .max_bytes((settings.width * settings.height * 4).into())
-            .build();
-
-        let queue = gst::ElementFactory::make("queue").build()?;
-        queue.set_property_from_str("leaky", "downstream");
-
-        // let videoconvert = gst::ElementFactory::make("videoconvert").build()?;
-
-        // let videoconvert_capsfilter = gst::ElementFactory::make("capsfilter").build()?;
-        //
-        // let videoconvert_caps = gst::Caps::builder("video/x-raw")
-        //     // .field("width", settings.width)
-        //     // .field("height", settings.height)
-        //     .build();
-        //
-        // videoconvert_capsfilter.set_property("caps", &videoconvert_caps);
-
-        let glupload = gst::ElementFactory::make("glupload").build()?;
-        let glupload_capsfilter = gst::ElementFactory::make("capsfilter").build()?;
-
-        let glupload_caps = gst::Caps::builder("video/x-raw")
-            .features(["memory:GLMemory"])
-            .field("texture-target", "external-oes")
-            // .field("width", settings.width)
-            // .field("height", settings.height)
-            .build();
-
-        glupload_capsfilter.set_property("caps", &glupload_caps);
-
-        let glcolorconvert = gst::ElementFactory::make("glcolorconvert").build()?;
-        let glcolorconvert_capsfilter = gst::ElementFactory::make("capsfilter").build()?;
-
-        // let glcolorconvert_video_info = gst_video::VideoInfo::builder(
-        //     gst_video::VideoFormat::Nv12,
+        // let video_info = gst_video::VideoInfo::builder(
+        //     gst_video::VideoFormat::Rgba,
         //     settings.width,
         //     settings.height,
         // )
         // .build()
         // .expect("Failed to create video info");
         //
-        // let mut glcolorconvert_caps = glcolorconvert_video_info.to_caps()?;
-        // glcolorconvert_caps
-        //     .make_mut()
-        //     .set_features_simple(Some(CapsFeatures::new(["memory:GLMemory"])));
+        // let mut caps = video_info.to_caps()?;
+        // caps.make_mut().set_features_simple(Some(CapsFeatures::new(["memory:DMABuf"])));
         //
-        // info!("glcolorconvert_caps: {:#?}", glcolorconvert_caps);
+        // info!("Video info caps: {:#?}", caps);
+
+        let appsrc = gst_app::AppSrc::builder()
+            .name("appsrc")
+            .do_timestamp(true)
+            .is_live(true)
+            // .caps(&caps)
+            // .format(gst::Format::Bytes)
+            .format(gst::Format::Time)
+            // Allocate space for 1 buffer
+            // .max_bytes((settings.width * settings.height * 4).into())
+            .max_buffers(1)
+            .build();
+
+        let queue = gst::ElementFactory::make("queue").build()?;
+        queue.set_property_from_str("leaky", "downstream");
+        queue.set_property("max-size-buffers", 1u32);
+
+        let glupload = gst::ElementFactory::make("glupload").build()?;
+
+        let glcolorconvert = gst::ElementFactory::make("glcolorconvert").build()?;
+        let glcolorconvert_capsfilter = gst::ElementFactory::make("capsfilter").build()?;
 
         let glcolorconvert_caps = gst::Caps::builder("video/x-raw")
             .features(["memory:GLMemory"])
-            .field("format", "NV12")
-            // .field("texture-target", "2D")
-            // .field("width", settings.width)
-            // .field("height", settings.height)
+            .field("format", "BGRA")
             .build();
 
         glcolorconvert_capsfilter.set_property("caps", &glcolorconvert_caps);
 
-        // let gldownload = gst::ElementFactory::make("gldownload").build()?;
+
+        // let glcolorconvert_rgba = gst::ElementFactory::make("glcolorconvert").build()?;
+        // let glcolorconvert_capsfilter_rgba = gst::ElementFactory::make("capsfilter").build()?;
+        //
+        // let glcolorconvert_caps_rgba = gst::Caps::builder("video/x-raw")
+        //     .features(["memory:GLMemory"])
+        //     .field("format", "RGBA")
+        //     .build();
+        //
+        // glcolorconvert_capsfilter_rgba.set_property("caps", &glcolorconvert_caps_rgba);
+
+
+        let gleffects = gst::ElementFactory::make("gleffects").build()?;
+        gleffects.set_property_from_str("effect", "identity");
 
         let encoder = gst::ElementFactory::make("nvh264enc").build()?;
         encoder.set_property("bitrate", 2048000_u32 / 1000);
@@ -115,6 +94,7 @@ impl GstWebRtcDmabufEncoder {
 
         let encoder_caps = gst::Caps::builder("video/x-h264")
             .field("stream-format", "avc") // Format standard pour RTP/WebRTC
+            .field("profile", "constrained-baseline") // Format standard pour RTP/WebRTC
             .build();
 
         let encoder_capsfilter = gst::ElementFactory::make("capsfilter").build()?;
@@ -123,77 +103,41 @@ impl GstWebRtcDmabufEncoder {
         let h264parse = gst::ElementFactory::make("h264parse").build()?;
         h264parse.set_property("config-interval", -1i32);
 
-
-        // let caps_setter = gst::ElementFactory::make("capssetter")
-        //     .build()
-        //     .expect("Failed to create capssetter");
-        // caps_setter.set_property("join", false);
-        // caps_setter.set_property("caps", &encoder_caps);
-
-        // let autovideosink_videoconvert = gst::ElementFactory::make("videoconvert").build()?;
-        // let autovideosink = gst::ElementFactory::make("fakesink").build()?;
-
-        let webrtcsink =
-            webrtcsink::BaseWebRTCSink::with_signaller(settings.signalling_server.as_ref().into());
-
-        // webrtcsink.set_property("async-handling", true);
+        let webrtcsink = BaseWebRTCSink::with_signaller(settings.signalling_server.as_ref().into());
 
         if let Some(video_caps) = &settings.video_caps {
             webrtcsink.set_property_from_str("video-caps", video_caps);
         }
-        if let Some(congestion_control) = &settings.congestion_control {
-            webrtcsink.set_property(
-                "congestion-control",
-                match congestion_control {
-                    CongestionControl::Disabled => WebRTCSinkCongestionControl::Disabled,
-                    CongestionControl::Homegrown => WebRTCSinkCongestionControl::Homegrown,
-                    CongestionControl::GoogleCongestionControl => {
-                        WebRTCSinkCongestionControl::GoogleCongestionControl
-                    }
-                },
-            );
-        }
 
-        let queue_encoder = gst::ElementFactory::make("queue").build()?;
+        // force disable congestion control because webrtcsink does not do encoding
+        webrtcsink.set_property("congestion-control", WebRTCSinkCongestionControl::Disabled);
 
         pipeline.add_many([
             appsrc.upcast_ref(),
-            // &queue,
-            // &videoconvert,
-            // &videoconvert_capsfilter,
+            &queue,
             &glupload,
-            // &glupload_capsfilter,
-            &glcolorconvert,
-            &glcolorconvert_capsfilter,
-            // &gldownload,
-            // &autovideosink_videoconvert,
+            // &glcolorconvert,
+            // &glcolorconvert_capsfilter,
+            // &glcolorconvert_rgba,
+            // &glcolorconvert_capsfilter_rgba,
+            &gleffects,
             &encoder,
             &h264parse,
             &encoder_capsfilter,
-            // &caps_setter,
-            // &queue_encoder,
-            // &autovideosink,
-            // &queue_encoder,
             webrtcsink.upcast_ref(),
         ])?;
         gst::Element::link_many([
             appsrc.upcast_ref(),
-            // &queue,
-            // &videoconvert,
-            // &videoconvert_capsfilter,
+            &queue,
             &glupload,
-            // &glupload_capsfilter,
-            &glcolorconvert,
-            &glcolorconvert_capsfilter,
-            // &gldownload,
-            // &autovideosink_videoconvert,
+            // &glcolorconvert,
+            // &glcolorconvert_capsfilter,
+            // &glcolorconvert_rgba,
+            // &glcolorconvert_capsfilter_rgba,
+            &gleffects,
             &encoder,
             &h264parse,
             &encoder_capsfilter,
-            // &caps_setter,
-            // &queue_encoder,
-            // &autovideosink,
-            // &queue_encoder,
             webrtcsink.upcast_ref(),
         ])?;
 

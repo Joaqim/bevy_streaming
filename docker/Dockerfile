@@ -36,7 +36,8 @@ COPY Cargo.toml Cargo.lock ./
 RUN mkdir ./src && touch ./src/lib.rs
 # Empty example
 RUN mkdir -p ./examples/simple && echo 'fn main() {}' > ./examples/simple/main.rs \
-    && mkdir -p ./examples/livekit && echo 'fn main() {}' > ./examples/livekit/main.rs
+    && mkdir -p ./examples/livekit && echo 'fn main() {}' > ./examples/livekit/main.rs \
+    && mkdir -p ./examples/surface && echo 'fn main() {}' > ./examples/surface/main.rs
 
 # Install Rust dependencies
 RUN cargo build --locked --release --examples --target x86_64-unknown-linux-gnu
@@ -45,7 +46,7 @@ RUN cargo build --locked --release --examples --target x86_64-unknown-linux-gnu
 COPY src src
 COPY examples examples
 # Need to touch files after erasing them to have them build again
-RUN touch ./examples/simple/main.rs && touch ./src/lib.rs
+RUN touch ./examples/simple/main.rs && touch ./examples/surface/main.rs && touch ./src/lib.rs
 
 # Build the application
 RUN cargo build --locked --release --examples --target x86_64-unknown-linux-gnu
@@ -67,6 +68,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gstreamer1.0-libav \
     gstreamer1.0-nice  \
     gstreamer1.0-tools \
+    gstreamer1.0-gl \
     libasound2t64 \
     # make vulkan backend available for mesa
     mesa-vulkan-drivers \
@@ -81,7 +83,8 @@ WORKDIR /app
 
 # Copy only the necessary built application from the builder stage
 COPY --from=builder /app/target/x86_64-unknown-linux-gnu/release/examples/simple .
+COPY --from=builder /app/target/x86_64-unknown-linux-gnu/release/examples/surface .
 COPY assets /app/assets
 
 # Define the entrypoint
-CMD ["./simple"]
+CMD ["./surface"]

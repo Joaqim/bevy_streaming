@@ -85,11 +85,9 @@ impl Plugin for StreamerPlugin {
 
         #[cfg(feature = "pixelstreaming")]
         {
-            use bevy_picking::PickingSystems;
-
             app.add_systems(
                 PreUpdate,
-                handle_controller_messages.in_set(PickingSystems::Input),
+                handle_controller_messages,
             );
         }
         app.add_systems(PostUpdate, handle_controllers);

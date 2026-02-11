@@ -84,6 +84,7 @@ drm-fourcc = { optional = true, version = "2.2", default-features = false }
 
 [dev-dependencies]
 bevy = { version = "0.18" }
+bevy_panorbit_camera = { version = "0.34.0" }
 
 [features]
 default = ["pixelstreaming", "surface"]

@@ -2,13 +2,15 @@ use bevy::{
     app::ScheduleRunnerPlugin, prelude::*, render::RenderPlugin, time::TimeUpdateStrategy,
     winit::WinitPlugin,
 };
+use bevy_panorbit_camera::{ActiveCameraData, PanOrbitCamera, PanOrbitCameraPlugin};
+use bevy_streaming::surface::encoder::GstWebRtcDmabufEncoder;
 use bevy_streaming::{
-    gst_webrtc_encoder::GstWebRtcEncoder, CongestionControl, GstWebRtcSettings, SignallingServer, StreamerCameraBuilder, StreamerHelper, StreamerPlugin
+    CongestionControl, GstWebRtcSettings, SignallingServer, StreamerCameraBuilder, StreamerHelper,
+    StreamerPlugin, gst_webrtc_encoder::GstWebRtcEncoder,
 };
 use camera_controller::{CameraController, CameraControllerPlugin};
 use cursor::CursorPlugin;
 use std::time::Duration;
-use bevy_streaming::surface::encoder::GstWebRtcDmabufEncoder;
 
 mod camera_controller;
 mod cursor;
@@ -33,18 +35,25 @@ fn main() -> AppExit {
         ),
         StreamerPlugin,
         CameraControllerPlugin,
+        PanOrbitCameraPlugin,
         CursorPlugin,
     ));
 
     // Update the time at a fixed rate of 60 FPS
-    app.insert_resource(TimeUpdateStrategy::ManualDuration(Duration::from_secs_f64(
-        1.0 / 60.0,
-    )));
+    // app.insert_resource(TimeUpdateStrategy::ManualDuration(Duration::from_secs_f64(
+    //     1.0 / 60.0,
+    // )));
 
     // Setup
     app.add_systems(Startup, (setup_cameras, setup_scene));
 
-    app.add_systems(Update, update_player_position_and_spectator_view);
+    app.add_systems(
+        Update,
+        (
+            update_player_position_and_spectator_view,
+            update_timestamp_system,
+        ),
+    );
 
     // Run the app
     app.run()
@@ -56,7 +65,17 @@ struct PlayerCamera;
 #[derive(Component)]
 struct SpectatorCamera;
 
-fn setup_cameras(mut commands: Commands, mut streamer: StreamerHelper<GstWebRtcEncoder>) {
+#[derive(Component)]
+struct TimestampText;
+
+fn setup_cameras(
+    mut commands: Commands,
+    mut streamer: StreamerHelper<GstWebRtcEncoder>,
+    mut active_camera_data: ResMut<ActiveCameraData>,
+) {
+    let width = 1920;
+    let height = 1080;
+
     // camera
     let main_camera = commands
         .spawn((
@@ -72,37 +91,43 @@ fn setup_cameras(mut commands: Commands, mut streamer: StreamerHelper<GstWebRtcE
                 //     uri: "ws://127.0.0.1:8443".to_string(),
                 //     peer_id: None,
                 // },
-                width: 1280,
-                height: 720,
+                width,
+                height,
                 video_caps: Some("video/x-h264".to_string()),
                 congestion_control: Some(CongestionControl::Disabled),
                 enable_controller: true,
             }),
-            CameraController::default(),
+            // CameraController::default(),
+            PanOrbitCamera::default(),
             PlayerCamera,
         ))
         .id();
 
-    commands.spawn((
-        Camera::default(),
-        Camera3d::default(),
-        Transform::from_xyz(2.5, 12.0, 9.0).looking_at(Vec3::ZERO, Vec3::Y),
-        streamer.new_render_target(GstWebRtcSettings {
-            signalling_server: SignallingServer::PixelStreaming {
-                uri: "ws://localhost:8888".to_string(),
-                streamer_id: Some("spectator".to_string()),
-            },
-            width: 1280,
-            height: 720,
-            video_caps: Some("video/x-h264".to_string()),
-            congestion_control: Some(CongestionControl::Disabled),
-            enable_controller: false,
-        }),
-        SpectatorCamera,
-    ));
+    active_camera_data.manual = true;
+    active_camera_data.entity = Some(main_camera);
+    active_camera_data.viewport_size = Some(Vec2::new(width as f32, height as f32));
+    active_camera_data.window_size = Some(Vec2::new(width as f32, height as f32));
+
+    // commands.spawn((
+    //     Camera::default(),
+    //     Camera3d::default(),
+    //     Transform::from_xyz(2.5, 12.0, 9.0).looking_at(Vec3::ZERO, Vec3::Y),
+    //     streamer.new_render_target(GstWebRtcSettings {
+    //         signalling_server: SignallingServer::PixelStreaming {
+    //             uri: "ws://localhost:8888".to_string(),
+    //             streamer_id: Some("spectator".to_string()),
+    //         },
+    //         width: 1280,
+    //         height: 720,
+    //         video_caps: Some("video/x-h264".to_string()),
+    //         congestion_control: Some(CongestionControl::Disabled),
+    //         enable_controller: false,
+    //     }),
+    //     SpectatorCamera,
+    // ));
 
     commands.spawn((
-        Text::new("You need to specify TargetCamera to display UI elements, because there is no main window."),
+        Text::default(),
         Node {
             position_type: PositionType::Absolute,
             top: Val::Px(12.0),
@@ -110,6 +135,7 @@ fn setup_cameras(mut commands: Commands, mut streamer: StreamerHelper<GstWebRtcE
             ..default()
         },
         UiTargetCamera(main_camera),
+        TimestampText,
     ));
 }
 
@@ -160,16 +186,25 @@ fn update_player_position_and_spectator_view(
             Without<SpectatorCamera>,
         ),
     >,
-    mut q_spectator_camera_transform: Query<
-        &mut Transform,
-        (With<SpectatorCamera>, Without<Player>),
-    >,
+    // mut q_spectator_camera_transform: Query<
+    //     &mut Transform,
+    //     (With<SpectatorCamera>, Without<Player>),
+    // >,
 ) {
     let camera_transform = q_player_camera_transform.single().unwrap();
     let mut player_position = q_player_transform.single_mut().unwrap();
 
     player_position.translation = camera_transform.translation;
 
-    let mut spectator_camera_transform = q_spectator_camera_transform.single_mut().unwrap();
-    spectator_camera_transform.look_at(camera_transform.translation, Vec3::Y);
+    // let mut spectator_camera_transform = q_spectator_camera_transform.single_mut().unwrap();
+    // spectator_camera_transform.look_at(camera_transform.translation, Vec3::Y);
+}
+
+fn update_timestamp_system(time: Res<Time>, mut query_cpu: Query<&mut Text, With<TimestampText>>) {
+    for mut text in &mut query_cpu {
+        // .elapsed_secs() donne le temps depuis le lancement
+        // Vous pouvez aussi utiliser .elapsed() pour obtenir un Duration plus précis
+        let seconds = time.elapsed_secs();
+        text.0 = format!("{:.3}s", seconds);
+    }
 }

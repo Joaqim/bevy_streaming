@@ -106,6 +106,8 @@ in
                 "--serve"
                 "--http_root"
                 "${cfg.package}/lib/SignallingWebServer/www"
+                "--log_folder"
+                "/var/log/pixelstreaming-signaller"
               ]
               ++ lib.optionals (cfg.maxPlayers > 0) [
                 "--max_players"
@@ -133,6 +135,9 @@ in
           "${cfg.package}/bin/pixelstreaming-signaller ${lib.escapeShellArgs args}";
 
         DynamicUser = true;
+        StateDirectory = "pixelstreaming-signaller";
+        LogsDirectory = "pixelstreaming-signaller";
+        WorkingDirectory = "/var/lib/pixelstreaming-signaller";
         Restart = "on-failure";
         RestartSec = 5;
 

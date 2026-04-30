@@ -165,8 +165,12 @@ pub fn release_mapped_buffers(
     release_buffer_signal: Res<ReleaseBufferSignal>,
 ) {
     while let Ok(signal) = release_buffer_signal.rx.try_recv() {
-        let capture = &captures[signal.capture_idx];
-        let buf = &capture.buffers[signal.buffer_idx];
+        let Some(capture) = captures.get(signal.capture_idx) else {
+            continue;
+        };
+        let Some(buf) = capture.buffers.get(signal.buffer_idx) else {
+            continue;
+        };
         buf.buffer.unmap();
         buf.in_use.store(false, Ordering::Release);
     }

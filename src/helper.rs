@@ -2,13 +2,14 @@ use bevy_asset::prelude::*;
 use bevy_ecs::{prelude::*, system::SystemParam};
 use bevy_image::prelude::*;
 use bevy_log::prelude::*;
-use bevy_render::{renderer::RenderDevice};
+use bevy_render::renderer::RenderDevice;
 use gst::prelude::*;
 use gstrswebrtc::webrtcsink;
 use std::{marker::PhantomData, sync::Arc};
 
 use crate::{
-    capture::setup_render_target, encoder::StreamEncoder, gst_webrtc_encoder::GstWebRtcEncoder, ControllerState, GstWebRtcSettings
+    capture::setup_render_target, encoder::StreamEncoder, gst_webrtc_encoder::GstWebRtcEncoder,
+    ControllerState, GstWebRtcSettings,
 };
 #[cfg(feature = "livekit")]
 use crate::livekit::{LiveKitSettings, LiveKitEncoder};
@@ -17,19 +18,18 @@ use crate::livekit::{LiveKitSettings, LiveKitEncoder};
 use crate::pixelstreaming::{controller::PSControllerState, handler::PSMessageHandler};
 
 #[derive(SystemParam)]
-pub struct StreamerHelper<'w, 's, E: StreamEncoder + 'static> {
-    commands: Commands<'w, 's>,
+pub struct StreamerHelper<'w, E: StreamEncoder + 'static> {
     images: ResMut<'w, Assets<Image>>,
     render_device: Res<'w, RenderDevice>,
-    _phantom_encoder: PhantomData<E>
+    _phantom_encoder: PhantomData<E>,
 }
 
 pub trait StreamerCameraBuilder<E: StreamEncoder, S> {
     fn new_render_target(&mut self, settings: S) -> impl Bundle;
 }
 
-impl<'w, 's> StreamerCameraBuilder<GstWebRtcEncoder, GstWebRtcSettings>
-for StreamerHelper<'w, 's, GstWebRtcEncoder>
+impl<'w> StreamerCameraBuilder<GstWebRtcEncoder, GstWebRtcSettings>
+for StreamerHelper<'w, GstWebRtcEncoder>
 {
     fn new_render_target(&mut self, settings: GstWebRtcSettings) -> impl Bundle {
         let encoder = GstWebRtcEncoder::with_settings(settings.clone())
@@ -48,8 +48,7 @@ for StreamerHelper<'w, 's, GstWebRtcEncoder>
             ControllerState::None
         };
 
-        let render_target = setup_render_target(
-            &mut self.commands,
+        let (capture, render_target) = setup_render_target(
             &mut self.images,
             &self.render_device,
             settings.width,
@@ -57,20 +56,19 @@ for StreamerHelper<'w, 's, GstWebRtcEncoder>
             Arc::new(encoder),
         );
 
-        (controller_state, render_target)
+        (controller_state, capture, render_target)
     }
 }
 
 #[cfg(feature = "livekit")]
-impl<'w, 's> StreamerCameraBuilder<LiveKitEncoder, LiveKitSettings>
-for StreamerHelper<'w, 's, LiveKitEncoder>
+impl<'w> StreamerCameraBuilder<LiveKitEncoder, LiveKitSettings>
+for StreamerHelper<'w, LiveKitEncoder>
 {
     fn new_render_target(&mut self, settings: LiveKitSettings) -> impl Bundle {
         let encoder = LiveKitEncoder::new(settings.clone())
             .expect("Unable to create LiveKit encoder");
 
-        let render_target = setup_render_target(
-            &mut self.commands,
+        let (capture, render_target) = setup_render_target(
             &mut self.images,
             &self.render_device,
             settings.width,
@@ -78,7 +76,7 @@ for StreamerHelper<'w, 's, LiveKitEncoder>
             encoder,
         );
 
-        (ControllerState::None, render_target)
+        (ControllerState::None, capture, render_target)
     }
 }
 

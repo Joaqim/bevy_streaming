@@ -115,23 +115,19 @@ impl Capture {
     }
 }
 
-/// Setups render target and cpu image for saving, changes scene state into render mode
 pub fn setup_render_target(
-    commands: &mut Commands,
     images: &mut ResMut<Assets<Image>>,
     render_device: &Res<RenderDevice>,
-    // render_instance: &Res<RenderInstance>,
     width: u32,
     height: u32,
     encoder: EncoderHandle,
-) -> RenderTarget {
+) -> (Capture, RenderTarget) {
     let size = Extent3d {
         width,
         height,
         ..Default::default()
     };
 
-    // This is the texture that will be rendered to.
     let mut render_target_image = Image::new_fill(
         size,
         TextureDimension::D2,
@@ -143,16 +139,14 @@ pub fn setup_render_target(
         TextureUsages::COPY_SRC | TextureUsages::RENDER_ATTACHMENT | TextureUsages::TEXTURE_BINDING;
     let render_target_image_handle = images.add(render_target_image);
 
-    commands.spawn(Capture::new(
+    let capture = Capture::new(
         render_target_image_handle.clone(),
         size,
         render_device,
         encoder,
-    ));
+    );
 
-    // commands.spawn(ImageToSave(cpu_image_handle));
-
-    RenderTarget::Image(render_target_image_handle.into())
+    (capture, RenderTarget::Image(render_target_image_handle.into()))
 }
 
 pub fn spawn_worker() -> (Sender<SendBufferJob>, Receiver<ReleaseSignal>) {

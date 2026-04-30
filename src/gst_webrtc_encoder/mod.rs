@@ -187,6 +187,14 @@ impl GstWebRtcEncoder {
     }
 }
 
+impl Drop for GstWebRtcEncoder {
+    fn drop(&mut self) {
+        if let Err(e) = self.pipeline.set_state(gst::State::Null) {
+            warn!("Failed to stop GStreamer pipeline on drop: {e}");
+        }
+    }
+}
+
 impl StreamEncoder for GstWebRtcEncoder {
     fn push_frame(&self, frame_data: &[u8]) -> Result<()> {
         self.push_buffer(&frame_data.to_vec())

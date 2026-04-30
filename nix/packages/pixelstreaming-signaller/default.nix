@@ -20,6 +20,9 @@ let
     pname = "pixelstreaming-frontend";
     inherit version src;
     sourceRoot = "source/Frontend/implementations/typescript";
+    postPatch = ''
+      cp ${./frontend-package-lock.json} package-lock.json
+    '';
     npmDepsHash = lib.fakeHash;
     buildPhase = ''
       npx webpack --config webpack.prod.js
@@ -36,6 +39,9 @@ buildNpmPackage {
   inherit version src;
 
   sourceRoot = "source/SignallingWebServer";
+  postPatch = ''
+    cp ${./package-lock.json} package-lock.json
+  '';
   npmDepsHash = lib.fakeHash;
 
   buildPhase = ''

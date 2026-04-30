@@ -105,8 +105,7 @@ in
                 (toString cfg.playerPort)
                 "--serve"
                 "--http_root"
-                "${cfg.package}/www"
-                "--no_config"
+                "${cfg.package}/lib/SignallingWebServer/www"
               ]
               ++ lib.optionals (cfg.maxPlayers > 0) [
                 "--max_players"

@@ -43,7 +43,9 @@ impl PSMessageHandler {
                     move |_channel: &WebRTCDataChannel, data: &glib::Bytes| {
                         match PSMessage::try_from(data.get(..).unwrap()) {
                             Ok(message) => {
-                                sender.send(message).unwrap();
+                                if sender.send(message).is_err() {
+                                    debug!("Message receiver dropped for session {session_id}, ignoring");
+                                }
                             }
                             Err(error) => {
                                 warn!("Unable to decode UE Message: {}", error);

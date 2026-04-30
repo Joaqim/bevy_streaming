@@ -1,3 +1,6 @@
 /target
 /.zed
 /.cargo
+/.direnv
+/result
+/result-*

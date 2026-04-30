@@ -2,16 +2,21 @@
   pkgs ? import ./nix/nixpkgs.nix { },
 }:
 let
+  gstPlugins =
+    with pkgs.gst_all_1;
+    [
+      gstreamer.out
+      gst-plugins-base
+      gst-plugins-good
+      gst-plugins-bad
+      gst-plugins-ugly
+      gst-plugins-rs
+      pkgs.libnice.out
+    ];
+
   runtimeLibs =
     with pkgs;
     [
-      gst_all_1.gstreamer
-      gst_all_1.gst-plugins-base
-      gst_all_1.gst-plugins-good
-      gst_all_1.gst-plugins-bad
-      gst_all_1.gst-plugins-ugly
-      gst_all_1.gst-plugins-rs
-      libnice
       openssl
       vulkan-loader
     ]
@@ -32,7 +37,11 @@ let
     gst-plugins-bad.dev
   ];
 
-  buildInputs = [ pkgs.pkg-config pkgs.openssl.dev ] ++ runtimeLibs ++ gstBuildDeps;
+  buildInputs =
+    [ pkgs.pkg-config pkgs.openssl.dev ]
+    ++ gstPlugins
+    ++ runtimeLibs
+    ++ gstBuildDeps;
 
   rustToolchain = import ./nix/rust-toolchain.nix { inherit pkgs; };
 
@@ -45,6 +54,9 @@ let
   cargoToml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
   inherit (cargoToml.package) version;
   pname = cargoToml.package.name;
+
+  allRuntimeLibs = gstPlugins ++ runtimeLibs;
+  gstPluginPath = pkgs.lib.makeSearchPath "lib/gstreamer-1.0" gstPlugins;
 in
 (pkgs.rustPlatform.buildRustPackage {
   inherit pname version;
@@ -61,8 +73,8 @@ in
   postInstall = ''
     install -Dm755 target/*/release/examples/simple $out/bin/simple
     wrapProgram $out/bin/simple \
-      --prefix LD_LIBRARY_PATH : ${pkgs.lib.makeLibraryPath runtimeLibs} \
-      --prefix GST_PLUGIN_PATH : ${pkgs.lib.makeSearchPath "lib/gstreamer-1.0" runtimeLibs}
+      --prefix LD_LIBRARY_PATH : ${pkgs.lib.makeLibraryPath allRuntimeLibs} \
+      --prefix GST_PLUGIN_SYSTEM_PATH_1_0 : ${gstPluginPath}
   '';
 
   inherit buildInputs nativeBuildInputs;
@@ -78,6 +90,6 @@ in
 }).overrideAttrs
   (old: {
     passthru = (old.passthru or { }) // {
-      inherit runtimeLibs;
+      inherit gstPlugins runtimeLibs;
     };
   })

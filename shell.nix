@@ -3,19 +3,9 @@
   package ? import ./default.nix { inherit pkgs; },
 }:
 let
-  libPath = pkgs.lib.makeLibraryPath package.passthru.runtimeLibs;
-
-  gstPlugins = with pkgs.gst_all_1; [
-    gstreamer.out
-    gst-plugins-base
-    gst-plugins-good
-    gst-plugins-bad
-    gst-plugins-ugly
-    gst-plugins-rs
-    pkgs.libnice
-  ];
-  gstPluginPath = pkgs.lib.makeSearchPath "lib/gstreamer-1.0" gstPlugins;
-
+  allRuntimeLibs = package.passthru.gstPlugins ++ package.passthru.runtimeLibs;
+  libPath = pkgs.lib.makeLibraryPath allRuntimeLibs;
+  gstPluginPath = pkgs.lib.makeSearchPath "lib/gstreamer-1.0" package.passthru.gstPlugins;
 in
 pkgs.mkShell {
   inputsFrom = [ package ];

@@ -38,6 +38,7 @@ let
   nativeBuildInputs = [
     rustToolchain
     pkgs.pkg-config
+    pkgs.makeWrapper
   ];
 
   cargoToml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
@@ -54,6 +55,15 @@ in
     allowBuiltinFetchGit = true;
   };
 
+  cargoBuildFlags = [ "--examples" ];
+
+  postInstall = ''
+    install -Dm755 target/*/release/examples/simple $out/bin/simple
+    wrapProgram $out/bin/simple \
+      --prefix LD_LIBRARY_PATH : ${pkgs.lib.makeLibraryPath runtimeLibs} \
+      --prefix GST_PLUGIN_PATH : ${pkgs.lib.makeSearchPath "lib/gstreamer-1.0" runtimeLibs}
+  '';
+
   inherit buildInputs nativeBuildInputs;
 
   doCheck = false;
@@ -62,6 +72,7 @@ in
     description = cargoToml.package.description or "";
     homepage = cargoToml.package.homepage or "";
     license = with licenses; [ mit ];
+    mainProgram = "simple";
   };
 }).overrideAttrs
   (old: {

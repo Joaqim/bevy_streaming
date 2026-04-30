@@ -99,9 +99,9 @@ fn create_pixelstreaming_controller(encoder: &GstWebRtcEncoder) -> ControllerSta
 
                 let message_handler = PSMessageHandler::new(sink, webrtcbin, peer_id);
 
-                sender
-                    .send((peer_id.to_string(), Some(message_handler)))
-                    .unwrap();
+                if let Err(e) = sender.send((peer_id.to_string(), Some(message_handler))) {
+                    warn!("Failed to send consumer-added for {}: {e}", peer_id);
+                }
             })
         });
 
@@ -114,7 +114,9 @@ fn create_pixelstreaming_controller(encoder: &GstWebRtcEncoder) -> ControllerSta
                                  _webrtcbin: &gst::Element| {
                 info!("Consumer removed: {}", peer_id);
 
-                sender.send((peer_id.to_string(), None)).unwrap();
+                if let Err(e) = sender.send((peer_id.to_string(), None)) {
+                    warn!("Failed to send consumer-removed for {}: {e}", peer_id);
+                }
             })
         });
 

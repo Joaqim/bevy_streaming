@@ -101,6 +101,120 @@ Open a browser to connect:
 Click in the player window to begin the WebRTC connection.
 The streamer connects to the signalling server on `ws://localhost:8888` (the default streamer port), while browsers connect via the HTTP player port.
 
+<details>
+<summary>NixOS module for persistent signalling server</summary>
+
+For a NixOS system that should run the PixelStreaming signalling server as a persistent service, this flake exports a NixOS module.
+
+#### Adding the module
+
+If your NixOS configuration uses flake inputs:
+
+```nix
+# flake.nix
+{
+  inputs.bevy-streaming.url = "github:Joaqim/bevy_streaming";
+
+  outputs = { self, nixpkgs, bevy-streaming, ... }: {
+    nixosConfigurations.myhost = nixpkgs.lib.nixosSystem {
+      modules = [
+        bevy-streaming.nixosModules.pixelstreaming-signaller
+        ./configuration.nix
+      ];
+    };
+  };
+}
+```
+
+If your NixOS configuration uses npins instead of flake inputs, import the module directly:
+
+```nix
+# configuration.nix
+let
+  sources = import ./npins;
+  bevy-streaming = import sources.bevy-streaming;
+in
+{
+  imports = [ (bevy-streaming + "/nix/module.nix") ];
+}
+```
+
+#### Minimal configuration (plain HTTP, no certificates)
+
+```nix
+{
+  services.pixelstreaming-signaller = {
+    enable = true;
+    playerPort = 8080;
+    streamerPort = 8888;
+    openFirewall = true;
+  };
+}
+```
+
+This starts a systemd service that serves the web player over plain HTTP on port 8080 and accepts streamer connections on port 8888.
+No TLS certificates are needed.
+The game connects via `ws://localhost:8888` and browsers open `http://<host>:8080`.
+
+For LAN or development use this is the simplest setup.
+WebRTC media streams are encrypted with DTLS-SRTP regardless of whether the signalling channel uses TLS, so the video and audio data is always encrypted in transit.
+
+#### Configuration with a STUN server
+
+For connections that need to traverse NAT (players outside the local network), add a STUN server:
+
+```nix
+{
+  services.pixelstreaming-signaller = {
+    enable = true;
+    peerOptions = builtins.toJSON {
+      iceServers = [{ urls = [ "stun:stun.l.google.com:19302" ]; }];
+    };
+    openFirewall = true;
+  };
+}
+```
+
+#### Optional: TLS for the signalling channel
+
+TLS is entirely opt-in.
+Enable it when the signalling server is exposed to the public internet or when browser security policies require HTTPS:
+
+```nix
+{
+  services.pixelstreaming-signaller = {
+    enable = true;
+    httpsEnable = true;
+    httpsPort = 8443;
+    sslCertPath = "/run/secrets/pixelstreaming/cert.pem";
+    sslKeyPath = "/run/secrets/pixelstreaming/key.pem";
+    maxPlayers = 4;
+    openFirewall = true;
+  };
+}
+```
+
+#### All options
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `enable` | bool | `false` | Enable the service |
+| `package` | package | built from npins | Override the signaller package |
+| `streamerPort` | port | `8888` | WebSocket port the game connects to |
+| `playerPort` | port | `8080` | HTTP port browsers connect to |
+| `httpsEnable` | bool | `false` | Enable TLS for the player port |
+| `httpsPort` | port | `8443` | HTTPS port when TLS is enabled |
+| `sslCertPath` | path or null | `null` | Path to TLS certificate |
+| `sslKeyPath` | path or null | `null` | Path to TLS private key |
+| `peerOptions` | string or null | `null` | JSON WebRTC peer config (STUN/TURN) |
+| `maxPlayers` | int | `0` | Max concurrent players (0 = unlimited) |
+| `extraArgs` | list of string | `[]` | Additional CLI arguments |
+| `openFirewall` | bool | `false` | Open streamer and player ports |
+
+The service runs as a hardened systemd unit with `DynamicUser`, `ProtectSystem=strict`, and other sandboxing options.
+
+</details>
+
 ### PixelStreaming example
 
 First, start a PixelStreaming signalling server with the following command:

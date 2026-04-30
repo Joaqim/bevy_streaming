@@ -66,9 +66,42 @@ Upgrade Rust if needed (Rust edition 2024):
 rustup update stable
 ```
 
+### Nix
+
+On NixOS or any system with the Nix package manager, all dependencies are handled automatically.
+No manual installation is required.
+
+Enter the development shell:
+
+```bash
+nix develop
+```
+
+This provides the Rust toolchain, GStreamer plugins, Vulkan libraries, and all other build dependencies.
+
 ## Running the examples
 
-### PixelStreaming Example
+### Quick start with Nix
+
+Start both the signalling server and the streaming example in two terminals:
+
+```bash
+# Terminal 1: start the signalling server
+nix run .#pixelstreaming-signaller -- --player_port 8080
+
+# Terminal 2: run the example
+nix run
+```
+
+Open a browser to connect:
+
+- Player (with mouse input): <http://localhost:8080/?StreamerId=player&HoveringMouse=true>
+- Spectator (view only): <http://localhost:8080/?StreamerId=spectator>
+
+Click in the player window to begin the WebRTC connection.
+The streamer connects to the signalling server on `ws://localhost:8888` (the default streamer port), while browsers connect via the HTTP player port.
+
+### PixelStreaming example
 
 First, start a PixelStreaming signalling server with the following command:
 

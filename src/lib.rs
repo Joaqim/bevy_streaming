@@ -16,7 +16,7 @@ use capture::{
     driver::{CaptureDriver, CaptureLabel},
 };
 
-mod capture;
+pub mod capture;
 mod helper;
 mod settings;
 

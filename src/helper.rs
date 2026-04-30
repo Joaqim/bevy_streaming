@@ -8,7 +8,9 @@ use gstrswebrtc::webrtcsink;
 use std::{marker::PhantomData, sync::Arc};
 
 use crate::{
-    capture::setup_render_target, encoder::StreamEncoder, gst_webrtc_encoder::GstWebRtcEncoder,
+    capture::{setup_capture, setup_render_target},
+    encoder::StreamEncoder,
+    gst_webrtc_encoder::GstWebRtcEncoder,
     ControllerState, GstWebRtcSettings,
 };
 #[cfg(feature = "livekit")]
@@ -26,6 +28,7 @@ pub struct StreamerHelper<'w, E: StreamEncoder + 'static> {
 
 pub trait StreamerCameraBuilder<E: StreamEncoder, S> {
     fn new_render_target(&mut self, settings: S) -> impl Bundle;
+    fn new_capture(&mut self, settings: S, src_image: Handle<Image>) -> impl Bundle;
 }
 
 impl<'w> StreamerCameraBuilder<GstWebRtcEncoder, GstWebRtcSettings>
@@ -58,6 +61,34 @@ for StreamerHelper<'w, GstWebRtcEncoder>
 
         (controller_state, capture, render_target)
     }
+
+    fn new_capture(&mut self, settings: GstWebRtcSettings, src_image: Handle<Image>) -> impl Bundle {
+        let encoder = GstWebRtcEncoder::with_settings(settings.clone())
+            .expect("Unable to create gst encoder");
+        encoder.start().expect("Unable to start pipeline");
+
+        let controller_state = if settings.enable_controller {
+            match &settings.signalling_server {
+                #[cfg(feature = "pixelstreaming")]
+                crate::SignallingServer::PixelStreaming { .. } => {
+                    create_pixelstreaming_controller(&encoder)
+                }
+                _ => ControllerState::None,
+            }
+        } else {
+            ControllerState::None
+        };
+
+        let capture = setup_capture(
+            &self.render_device,
+            src_image,
+            settings.width,
+            settings.height,
+            Arc::new(encoder),
+        );
+
+        (controller_state, capture)
+    }
 }
 
 #[cfg(feature = "livekit")]
@@ -77,6 +108,21 @@ for StreamerHelper<'w, LiveKitEncoder>
         );
 
         (ControllerState::None, capture, render_target)
+    }
+
+    fn new_capture(&mut self, settings: LiveKitSettings, src_image: Handle<Image>) -> impl Bundle {
+        let encoder = LiveKitEncoder::new(settings.clone())
+            .expect("Unable to create LiveKit encoder");
+
+        let capture = setup_capture(
+            &self.render_device,
+            src_image,
+            settings.width,
+            settings.height,
+            encoder,
+        );
+
+        (ControllerState::None, capture)
     }
 }
 

@@ -12,6 +12,7 @@ let
     gst-plugins-bad
     gst-plugins-ugly
     gst-plugins-rs
+    pkgs.libnice
   ];
   gstPluginPath = pkgs.lib.makeSearchPath "lib/gstreamer-1.0" gstPlugins;
 

@@ -33,14 +33,14 @@ buildNpmPackage {
 
   installPhase = ''
     runHook preInstall
-    mkdir -p $out/{bin,lib/SignallingWebServer,www}
+    mkdir -p $out/{bin,lib}
 
     cp -r Common Signalling SignallingWebServer Frontend node_modules package.json $out/lib/
-    cp -r Frontend/implementations/typescript/dist/* $out/www/
 
     cat > $out/bin/pixelstreaming-signaller <<WRAPPER
     #!${stdenv.shell}
-    exec ${nodejs}/bin/node $out/lib/SignallingWebServer/dist/index.js "\$@"
+    exec ${nodejs}/bin/node $out/lib/SignallingWebServer/dist/index.js \
+      --http_root $out/lib/SignallingWebServer/www "\$@"
     WRAPPER
     chmod +x $out/bin/pixelstreaming-signaller
     runHook postInstall

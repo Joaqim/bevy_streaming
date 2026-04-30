@@ -149,6 +149,21 @@ pub fn setup_render_target(
     (capture, RenderTarget::Image(render_target_image_handle.into()))
 }
 
+pub fn setup_capture(
+    render_device: &Res<RenderDevice>,
+    src_image: Handle<Image>,
+    width: u32,
+    height: u32,
+    encoder: EncoderHandle,
+) -> Capture {
+    let size = Extent3d {
+        width,
+        height,
+        ..Default::default()
+    };
+    Capture::new(src_image, size, render_device, encoder)
+}
+
 pub fn spawn_worker() -> (Sender<SendBufferJob>, Receiver<ReleaseSignal>) {
     let (tx_job, rx_job) = unbounded::<SendBufferJob>();
     let (tx_release, rx_release) = unbounded::<ReleaseSignal>();

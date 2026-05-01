@@ -65,6 +65,19 @@ impl<'w> PSConversions<'w> {
         }
     }
 
+    /// Like `from_ps_position` but amplifies distance from center by `delta_multiplier`.
+    /// Uses the stable PS absolute position (no delta accumulation jitter).
+    pub fn from_ps_position_scaled<T>(&self, render_target: &RenderTarget, x: T, y: T) -> Vec2
+    where
+        T: Into<f32>,
+    {
+        let raw = self.from_ps_position(render_target, x, y);
+        let size = self.image_size(render_target);
+        let center = size / 2.0;
+        let m = self.mouse_config.delta_multiplier;
+        (center + (raw - center) * m).clamp(Vec2::ZERO, size)
+    }
+
     /// Decode PS-normalized deltas back to approximate raw pixel deltas.
     ///
     /// The PS frontend encodes: `encoded = raw / (half_player_dim) * 32767`.

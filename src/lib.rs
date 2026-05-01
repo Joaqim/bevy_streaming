@@ -137,6 +137,7 @@ fn handle_controller_messages(
                         match ue_msg {
                             PSMessage::MouseMove(mouse_move) => {
                                 let delta = ps_conversions.from_ps_delta(
+                                    render_target,
                                     mouse_move.delta_x,
                                     mouse_move.delta_y,
                                 );

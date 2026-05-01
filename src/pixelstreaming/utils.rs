@@ -45,7 +45,7 @@ impl Default for PSMouseConfig {
 #[derive(SystemParam)]
 pub struct PSConversions<'w> {
     images: Res<'w, Assets<Image>>,
-    mouse_config: Res<'w, PSMouseConfig>,
+    pub mouse_config: Res<'w, PSMouseConfig>,
 }
 
 impl<'w> PSConversions<'w> {

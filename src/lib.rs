@@ -39,6 +39,8 @@ enum ControllerState {
     PSControllerState(PSControllerState),
 }
 pub use helper::*;
+#[cfg(feature = "pixelstreaming")]
+pub use pixelstreaming::utils::PSMouseConfig;
 pub use settings::*;
 
 #[cfg(feature = "pixelstreaming")]
@@ -81,6 +83,7 @@ impl Plugin for StreamerPlugin {
 
         #[cfg(feature = "pixelstreaming")]
         {
+            app.init_resource::<pixelstreaming::utils::PSMouseConfig>();
             app.add_systems(
                 PreUpdate,
                 handle_controller_messages.in_set(PickingSystems::Input),
@@ -137,7 +140,6 @@ fn handle_controller_messages(
                         match ue_msg {
                             PSMessage::MouseMove(mouse_move) => {
                                 let delta = ps_conversions.from_ps_delta(
-                                    render_target,
                                     mouse_move.delta_x,
                                     mouse_move.delta_y,
                                 );

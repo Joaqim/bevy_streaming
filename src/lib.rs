@@ -5,14 +5,11 @@ use bevy_camera::RenderTarget;
 use bevy_ecs::prelude::*;
 use bevy_input::{
     keyboard::KeyboardInput,
-    mouse::{MouseButtonInput, MouseMotion, MouseWheel},
+    mouse::{AccumulatedMouseMotion, MouseButtonInput, MouseWheel},
 };
 use bevy_render::{Render, RenderApp, RenderSystems, prelude::*, render_graph::RenderGraph};
 #[cfg(feature = "pixelstreaming")]
-use bevy_picking::{
-    PickingSystems,
-    pointer::{Location, PointerAction, PointerId, PointerInput},
-};
+use bevy_picking::pointer::{Location, PointerAction, PointerId, PointerInput};
 #[cfg(feature = "pixelstreaming")]
 use bevy_window::{PrimaryWindow, prelude::*};
 
@@ -86,7 +83,8 @@ impl Plugin for StreamerPlugin {
             app.init_resource::<pixelstreaming::utils::PSMouseConfig>();
             app.add_systems(
                 PreUpdate,
-                handle_controller_messages.in_set(PickingSystems::Input),
+                handle_controller_messages
+                    .after(bevy_input::InputSystems),
             );
         }
         app.add_systems(PostUpdate, handle_controllers);
@@ -120,7 +118,7 @@ fn handle_controller_messages(
     mut controllers: Query<(&RenderTarget, &mut ControllerState)>,
     windows: Query<(Entity, &Window), With<PrimaryWindow>>,
     #[cfg(feature = "pixelstreaming")] ps_conversions: PSConversions,
-    mut mouse_motion_event: MessageWriter<MouseMotion>,
+    mut accumulated_mouse_motion: ResMut<AccumulatedMouseMotion>,
     mut mouse_button_input_events: MessageWriter<MouseButtonInput>,
     mut mouse_wheel_events: MessageWriter<MouseWheel>,
     mut keyboard_input_events: MessageWriter<KeyboardInput>,
@@ -143,7 +141,7 @@ fn handle_controller_messages(
                                     mouse_move.delta_x,
                                     mouse_move.delta_y,
                                 );
-                                mouse_motion_event.write(MouseMotion { delta });
+                                accumulated_mouse_motion.delta += delta;
                                 let position = ps_conversions.from_ps_position_scaled(
                                     render_target,
                                     mouse_move.x,

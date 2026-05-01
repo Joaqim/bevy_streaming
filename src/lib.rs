@@ -9,7 +9,12 @@ use bevy_input::{
 };
 use bevy_render::{Render, RenderApp, RenderSystems, prelude::*, render_graph::RenderGraph};
 #[cfg(feature = "pixelstreaming")]
-use bevy_window::{PrimaryWindow, WindowEvent, prelude::*};
+use bevy_picking::{
+    PickingSystems,
+    pointer::{Location, PointerAction, PointerId, PointerInput},
+};
+#[cfg(feature = "pixelstreaming")]
+use bevy_window::{PrimaryWindow, prelude::*};
 
 use capture::{
     capture_extract,
@@ -76,8 +81,6 @@ impl Plugin for StreamerPlugin {
 
         #[cfg(feature = "pixelstreaming")]
         {
-            use bevy_picking::PickingSystems;
-
             app.add_systems(
                 PreUpdate,
                 handle_controller_messages.in_set(PickingSystems::Input),
@@ -117,8 +120,9 @@ fn handle_controller_messages(
     mut mouse_motion_event: MessageWriter<MouseMotion>,
     mut mouse_button_input_events: MessageWriter<MouseButtonInput>,
     mut mouse_wheel_events: MessageWriter<MouseWheel>,
-    mut window_events: MessageWriter<WindowEvent>,
     mut keyboard_input_events: MessageWriter<KeyboardInput>,
+    mut pointer_inputs: MessageWriter<PointerInput>,
+    mut last_location: Local<Option<Location>>,
 ) {
     let window = windows.single().unwrap().0;
 
@@ -132,26 +136,28 @@ fn handle_controller_messages(
                     for ue_msg in handler.message_receiver.try_iter() {
                         match ue_msg {
                             PSMessage::MouseMove(mouse_move) => {
-                                mouse_motion_event.write(MouseMotion {
-                                    delta: ps_conversions.from_ps_delta(
-                                        render_target,
-                                        mouse_move.delta_x,
-                                        mouse_move.delta_y,
-                                    ),
-                                });
-                                window_events.write(WindowEvent::CursorMoved(CursorMoved {
-                                    window,
+                                let delta = ps_conversions.from_ps_delta(
+                                    render_target,
+                                    mouse_move.delta_x,
+                                    mouse_move.delta_y,
+                                );
+                                mouse_motion_event.write(MouseMotion { delta });
+                                let location = Location {
+                                    target: render_target
+                                        .normalize(Some(window))
+                                        .unwrap(),
                                     position: ps_conversions.from_ps_position(
                                         render_target,
                                         mouse_move.x,
                                         mouse_move.y,
                                     ),
-                                    delta: Some(ps_conversions.from_ps_delta(
-                                        render_target,
-                                        mouse_move.delta_x,
-                                        mouse_move.delta_y,
-                                    )),
-                                }));
+                                };
+                                pointer_inputs.write(PointerInput::new(
+                                    PointerId::Mouse,
+                                    location.clone(),
+                                    PointerAction::Move { delta },
+                                ));
+                                *last_location = Some(location);
                             }
                             PSMessage::MouseDown(mouse_down) => {
                                 mouse_button_input_events.write(MouseButtonInput {
@@ -159,6 +165,15 @@ fn handle_controller_messages(
                                     state: bevy_input::ButtonState::Pressed,
                                     window,
                                 });
+                                if let Some(location) = last_location.as_ref() {
+                                    pointer_inputs.write(PointerInput::new(
+                                        PointerId::Mouse,
+                                        location.clone(),
+                                        PointerAction::Press(
+                                            ps_conversions.ps_to_pointer_button(mouse_down.button),
+                                        ),
+                                    ));
+                                }
                             }
                             PSMessage::MouseUp(mouse_up) => {
                                 mouse_button_input_events.write(MouseButtonInput {
@@ -166,6 +181,15 @@ fn handle_controller_messages(
                                     state: bevy_input::ButtonState::Released,
                                     window,
                                 });
+                                if let Some(location) = last_location.as_ref() {
+                                    pointer_inputs.write(PointerInput::new(
+                                        PointerId::Mouse,
+                                        location.clone(),
+                                        PointerAction::Release(
+                                            ps_conversions.ps_to_pointer_button(mouse_up.button),
+                                        ),
+                                    ));
+                                }
                             }
                             PSMessage::UiInteraction(_ui_interaction) => {}
                             PSMessage::Command(_command) => {}

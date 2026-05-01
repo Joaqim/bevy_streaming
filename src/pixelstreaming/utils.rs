@@ -56,7 +56,6 @@ impl<'w> PSConversions<'w> {
         }
     }
 
-    #[allow(dead_code)]
     pub fn ps_to_pointer_button(&self, button: u8) -> PointerButton {
         match button {
             0 => PointerButton::Primary,

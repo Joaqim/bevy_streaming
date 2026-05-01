@@ -122,6 +122,7 @@ fn handle_controller_messages(
     mut mouse_wheel_events: MessageWriter<MouseWheel>,
     mut keyboard_input_events: MessageWriter<KeyboardInput>,
     mut pointer_inputs: MessageWriter<PointerInput>,
+    mut cursor_pos: Local<Option<Vec2>>,
     mut last_location: Local<Option<Location>>,
 ) {
     let window = windows.single().unwrap().0;
@@ -141,16 +142,14 @@ fn handle_controller_messages(
                                     mouse_move.delta_y,
                                 );
                                 mouse_motion_event.write(MouseMotion { delta });
-                                let position = ps_conversions.from_ps_position_scaled(
-                                    render_target,
-                                    mouse_move.x,
-                                    mouse_move.y,
-                                );
+                                let size = ps_conversions.image_size(render_target);
+                                let pos = cursor_pos.get_or_insert(size / 2.0);
+                                *pos = (*pos + delta).clamp(Vec2::ZERO, size);
                                 let location = Location {
                                     target: render_target
                                         .normalize(Some(window))
                                         .unwrap(),
-                                    position,
+                                    position: *pos,
                                 };
                                 pointer_inputs.write(PointerInput::new(
                                     PointerId::Mouse,

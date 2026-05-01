@@ -12,9 +12,31 @@ use bevy_picking::{pointer::Location, prelude::*};
 
 pub const SCALE: f32 = 65536.0;
 
+/// Configuration for Pixel Streaming mouse delta decoding.
+///
+/// The PS frontend normalizes deltas relative to the browser player element
+/// dimensions, but the server doesn't know those dimensions. This resource
+/// provides the assumed player dimensions used to reverse the normalization,
+/// producing deltas that approximate raw device pixels.
+#[derive(Resource)]
+pub struct PSMouseConfig {
+    pub reference_width: f32,
+    pub reference_height: f32,
+}
+
+impl Default for PSMouseConfig {
+    fn default() -> Self {
+        Self {
+            reference_width: 1920.0,
+            reference_height: 1080.0,
+        }
+    }
+}
+
 #[derive(SystemParam)]
 pub struct PSConversions<'w> {
     images: Res<'w, Assets<Image>>,
+    mouse_config: Res<'w, PSMouseConfig>,
 }
 
 impl<'w> PSConversions<'w> {
@@ -35,11 +57,20 @@ impl<'w> PSConversions<'w> {
         }
     }
 
-    pub fn from_ps_delta<T>(&self, render_target: &RenderTarget, x: T, y: T) -> Vec2
+    /// Decode PS-normalized deltas back to approximate raw pixel deltas.
+    ///
+    /// The PS frontend encodes: `encoded = raw / (half_player_dim) * 32767`.
+    /// We reverse this using the configured reference dimensions.
+    pub fn from_ps_delta<T>(&self, x: T, y: T) -> Vec2
     where
         T: Into<f32>,
     {
-        self.from_ps_position(render_target, x, y)
+        let half_w = self.mouse_config.reference_width / 2.0;
+        let half_h = self.mouse_config.reference_height / 2.0;
+        Vec2 {
+            x: x.into() * half_w / 32767.0,
+            y: y.into() * half_h / 32767.0,
+        }
     }
 
     #[allow(dead_code)]

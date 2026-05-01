@@ -123,6 +123,7 @@ fn handle_controller_messages(
     mut mouse_wheel_events: MessageWriter<MouseWheel>,
     mut keyboard_input_events: MessageWriter<KeyboardInput>,
     mut pointer_inputs: MessageWriter<PointerInput>,
+    mut smoothed_delta: Local<Vec2>,
     mut cursor_pos: Local<Option<Vec2>>,
     mut last_location: Local<Option<Location>>,
 ) {
@@ -135,29 +136,15 @@ fn handle_controller_messages(
             #[cfg(feature = "pixelstreaming")]
             ControllerState::PSControllerState(ue_controller_state) => {
                 for (_peer_id, handler) in ue_controller_state.handlers.iter() {
+                    let mut frame_delta = Vec2::ZERO;
+
                     for ue_msg in handler.message_receiver.try_iter() {
                         match ue_msg {
                             PSMessage::MouseMove(mouse_move) => {
-                                let delta = ps_conversions.from_ps_delta(
+                                frame_delta += ps_conversions.from_ps_delta(
                                     mouse_move.delta_x,
                                     mouse_move.delta_y,
                                 );
-                                mouse_motion_event.write(MouseMotion { delta });
-                                let size = ps_conversions.image_size(render_target);
-                                let pos = cursor_pos.get_or_insert(size / 2.0);
-                                *pos = (*pos + delta).clamp(Vec2::ZERO, size);
-                                let location = Location {
-                                    target: render_target
-                                        .normalize(Some(window))
-                                        .unwrap(),
-                                    position: *pos,
-                                };
-                                pointer_inputs.write(PointerInput::new(
-                                    PointerId::Mouse,
-                                    location.clone(),
-                                    PointerAction::Move { delta },
-                                ));
-                                *last_location = Some(location);
                             }
                             PSMessage::MouseDown(mouse_down) => {
                                 mouse_button_input_events.write(MouseButtonInput {
@@ -226,6 +213,32 @@ fn handle_controller_messages(
                             }
                             PSMessage::MouseDouble(_mouse_double) => {}
                         }
+                    }
+
+                    if frame_delta != Vec2::ZERO {
+                        let s = ps_conversions.mouse_config.smoothing;
+                        let delta = frame_delta.lerp(*smoothed_delta, s);
+                        *smoothed_delta = delta;
+
+                        mouse_motion_event.write(MouseMotion { delta });
+
+                        let size = ps_conversions.image_size(render_target);
+                        let pos = cursor_pos.get_or_insert(size / 2.0);
+                        *pos = (*pos + delta).clamp(Vec2::ZERO, size);
+                        let location = Location {
+                            target: render_target
+                                .normalize(Some(window))
+                                .unwrap(),
+                            position: *pos,
+                        };
+                        pointer_inputs.write(PointerInput::new(
+                            PointerId::Mouse,
+                            location.clone(),
+                            PointerAction::Move { delta },
+                        ));
+                        *last_location = Some(location);
+                    } else {
+                        *smoothed_delta = Vec2::ZERO;
                     }
                 }
             }

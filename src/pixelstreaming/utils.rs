@@ -26,6 +26,9 @@ pub struct PSMouseConfig {
     /// Compensates for differences in mouse acceleration between the
     /// native server input and the browser client input.
     pub delta_multiplier: f32,
+    /// EMA smoothing factor for per-frame delta. 0.0 = no smoothing
+    /// (raw input), 1.0 = maximum smoothing (ignores new input).
+    pub smoothing: f32,
 }
 
 impl Default for PSMouseConfig {
@@ -34,6 +37,7 @@ impl Default for PSMouseConfig {
             reference_width: 1920.0,
             reference_height: 1080.0,
             delta_multiplier: 5.0,
+            smoothing: 0.3,
         }
     }
 }

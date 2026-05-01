@@ -22,6 +22,10 @@ pub const SCALE: f32 = 65536.0;
 pub struct PSMouseConfig {
     pub reference_width: f32,
     pub reference_height: f32,
+    /// Extra multiplier applied after reversing the PS normalization.
+    /// Compensates for differences in mouse acceleration between the
+    /// native server input and the browser client input.
+    pub delta_multiplier: f32,
 }
 
 impl Default for PSMouseConfig {
@@ -29,6 +33,7 @@ impl Default for PSMouseConfig {
         Self {
             reference_width: 1920.0,
             reference_height: 1080.0,
+            delta_multiplier: 5.0,
         }
     }
 }
@@ -40,20 +45,23 @@ pub struct PSConversions<'w> {
 }
 
 impl<'w> PSConversions<'w> {
+    pub fn image_size(&self, render_target: &RenderTarget) -> Vec2 {
+        let image = render_target.as_image().unwrap();
+        let image = self.images.get(image).unwrap();
+        image.size().as_vec2()
+    }
+
     pub fn from_ps_position<T>(&self, render_target: &RenderTarget, x: T, y: T) -> Vec2
     where
         T: Into<f32>,
     {
-        let image = render_target.as_image().unwrap();
-        let image = self.images.get(image).unwrap();
-        let w = image.size().x as f32;
-        let h = image.size().y as f32;
+        let size = self.image_size(render_target);
 
         let x = Into::<f32>::into(x);
         let y = Into::<f32>::into(y);
         Vec2 {
-            x: w * x as f32 / SCALE,
-            y: h * y as f32 / SCALE,
+            x: size.x * x as f32 / SCALE,
+            y: size.y * y as f32 / SCALE,
         }
     }
 
@@ -65,11 +73,12 @@ impl<'w> PSConversions<'w> {
     where
         T: Into<f32>,
     {
+        let m = self.mouse_config.delta_multiplier;
         let half_w = self.mouse_config.reference_width / 2.0;
         let half_h = self.mouse_config.reference_height / 2.0;
         Vec2 {
-            x: x.into() * half_w / 32767.0,
-            y: y.into() * half_h / 32767.0,
+            x: x.into() * half_w / 32767.0 * m,
+            y: y.into() * half_h / 32767.0 * m,
         }
     }
 

@@ -9,8 +9,6 @@ use bevy_input::{
 };
 use bevy_render::{Render, RenderApp, RenderSystems, prelude::*, render_graph::RenderGraph};
 #[cfg(feature = "pixelstreaming")]
-use bevy_math::Vec2;
-#[cfg(feature = "pixelstreaming")]
 use bevy_picking::{
     PickingSystems,
     pointer::{Location, PointerAction, PointerId, PointerInput},
@@ -146,16 +144,11 @@ fn handle_controller_messages(
                                     mouse_move.delta_y,
                                 );
                                 mouse_motion_event.write(MouseMotion { delta });
-                                let image_size = ps_conversions.image_size(render_target);
-                                let position = match last_location.as_ref() {
-                                    Some(loc) => (loc.position + delta)
-                                        .clamp(Vec2::ZERO, image_size),
-                                    None => ps_conversions.from_ps_position(
-                                        render_target,
-                                        mouse_move.x,
-                                        mouse_move.y,
-                                    ),
-                                };
+                                let position = ps_conversions.from_ps_position_scaled(
+                                    render_target,
+                                    mouse_move.x,
+                                    mouse_move.y,
+                                );
                                 let location = Location {
                                     target: render_target
                                         .normalize(Some(window))

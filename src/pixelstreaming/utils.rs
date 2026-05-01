@@ -35,11 +35,11 @@ impl<'w> PSConversions<'w> {
         }
     }
 
-    pub fn from_ps_delta<T>(&self, render_target: &RenderTarget, x: T, y: T) -> Vec2
+    pub fn from_ps_delta<T>(&self, x: T, y: T) -> Vec2
     where
         T: Into<f32>,
     {
-        self.from_ps_position(render_target, x, y)
+        Vec2::new(x.into(), y.into())
     }
 
     #[allow(dead_code)]

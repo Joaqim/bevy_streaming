@@ -7,6 +7,7 @@ use bevy_input::{
     keyboard::KeyboardInput,
     mouse::{MouseButtonInput, MouseMotion, MouseWheel},
 };
+use bevy_math::Vec2;
 use bevy_render::{Render, RenderApp, RenderSystems, prelude::*, render_graph::RenderGraph};
 #[cfg(feature = "pixelstreaming")]
 use bevy_picking::pointer::{Location, PointerAction, PointerId, PointerInput};

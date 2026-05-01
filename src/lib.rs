@@ -9,10 +9,7 @@ use bevy_input::{
 };
 use bevy_render::{Render, RenderApp, RenderSystems, prelude::*, render_graph::RenderGraph};
 #[cfg(feature = "pixelstreaming")]
-use bevy_picking::{
-    PickingSystems,
-    pointer::{Location, PointerAction, PointerId, PointerInput},
-};
+use bevy_picking::pointer::{Location, PointerAction, PointerId, PointerInput};
 #[cfg(feature = "pixelstreaming")]
 use bevy_window::{PrimaryWindow, prelude::*};
 
@@ -86,7 +83,7 @@ impl Plugin for StreamerPlugin {
             app.init_resource::<pixelstreaming::utils::PSMouseConfig>();
             app.add_systems(
                 PreUpdate,
-                handle_controller_messages.in_set(PickingSystems::Input),
+                handle_controller_messages.before(bevy_input::InputSystems),
             );
         }
         app.add_systems(PostUpdate, handle_controllers);

@@ -1,0 +1,12 @@
+{
+    "name": "pixelstreaming-infrastructure",
+    "workspaces": [
+        "Common",
+        "Frontend/library",
+        "Frontend/ui-library",
+        "Frontend/implementations/typescript",
+        "Signalling",
+        "SignallingWebServer"
+    ],
+    "private": true
+}

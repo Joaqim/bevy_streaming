@@ -1,0 +1,37 @@
+{
+  "pins": {
+    "nixpkgs": {
+      "type": "Channel",
+      "name": "nixpkgs-unstable",
+      "url": "https://releases.nixos.org/nixpkgs/nixpkgs-26.05pre988811.ebc08544afa7/nixexprs.tar.xz",
+      "hash": "sha256-fUlUlthbjH+ppUqSdGoLFM+GbtuxcDhp8V8ouXEAgow="
+    },
+    "pixelstreaming": {
+      "type": "Git",
+      "repository": {
+        "type": "GitHub",
+        "owner": "EpicGamesExt",
+        "repo": "PixelStreamingInfrastructure"
+      },
+      "branch": "UE5.7",
+      "submodules": false,
+      "revision": "4f007e3887c25f0d699e202b4d72366bbf0641e0",
+      "url": "https://github.com/EpicGamesExt/PixelStreamingInfrastructure/archive/4f007e3887c25f0d699e202b4d72366bbf0641e0.tar.gz",
+      "hash": "sha256-deLK1jf3+ZVeOwlSwDZvVIS55HrzDhtUmv8+hjpJ9Fk="
+    },
+    "rust-overlay": {
+      "type": "Git",
+      "repository": {
+        "type": "GitHub",
+        "owner": "oxalica",
+        "repo": "rust-overlay"
+      },
+      "branch": "master",
+      "submodules": false,
+      "revision": "09b556f18dacc39e97a46e0a1cba47af7b3af1d8",
+      "url": "https://github.com/oxalica/rust-overlay/archive/09b556f18dacc39e97a46e0a1cba47af7b3af1d8.tar.gz",
+      "hash": "sha256-TXilQ8MwFFtZs7HSogSI/LJzAS63nicE8iF63iB93WM="
+    }
+  },
+  "version": 7
+}

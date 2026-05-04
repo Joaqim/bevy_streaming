@@ -56,6 +56,16 @@ impl GstWebRtcEncoder {
     pub fn with_settings(settings: GstWebRtcSettings) -> Result<Self> {
         gst::init()?;
 
+        for element in ["nicesrc", "nicesink", "webrtcbin"] {
+            if gst::ElementFactory::find(element).is_none() {
+                anyhow::bail!(
+                    "Required GStreamer element '{element}' not found. \
+                     WebRTC streaming requires libnice. \
+                     On NixOS/Nix, ensure 'libnice' is in your GStreamer plugin path."
+                );
+            }
+        }
+
         let pipeline = gst::Pipeline::default();
 
         // Specify the format we want to provide as application into the pipeline

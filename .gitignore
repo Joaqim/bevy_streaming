@@ -1,3 +1,9 @@
 /target
 /.zed
 /.cargo
+/.direnv
+/result
+/result-*
+.env
+!.env.example
+/logs
